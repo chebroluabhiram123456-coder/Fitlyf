@@ -1,7 +1,7 @@
 import 'dart.io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package.provider/provider.dart';
+import 'package:provider/provider.dart'; // <-- IMPORT ADDED
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
@@ -45,21 +45,27 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         imagePath: _imageFile?.path,
         videoPath: _videoFile?.path,
       );
-      // Use the provider to add the new exercise to the master list
       Provider.of<WorkoutProvider>(context, listen: false).addExerciseToMasterList(newExercise);
-      Navigator.pop(context); // Go back after saving
+      Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      // ... (Gradient decoration remains the same)
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text('Add New Exercise'),
-          // ... (AppBar style remains the same)
+          backgroundColor: Colors.transparent,
+          elevation: 0,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -84,8 +90,17 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
               const SizedBox(height: 40),
               ElevatedButton(
                 onPressed: _saveExercise,
-                // ... (Button style remains the same)
-                child: const Text('Save Exercise to Library'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                ),
+                child: const Text(
+                  'Save Exercise to Library',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -94,6 +109,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     );
   }
 
+  // --- HELPER METHODS THAT WERE MISSING ---
   Widget _buildMuscleGroupSelector() {
     return DropdownButtonFormField<String>(
       value: _selectedMuscleGroup,
@@ -101,7 +117,14 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       dropdownColor: const Color(0xFF2D1458),
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        // ... (InputDecoration style remains the same)
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.white54),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.white),
+          borderRadius: BorderRadius.circular(15),
+        ),
       ),
       items: _muscleGroups.map((String value) {
         return DropdownMenuItem<String>(
@@ -116,6 +139,38 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       },
     );
   }
-  
-  // ... (_buildTextField and _buildPickerButton widgets remain the same)
+
+  Widget _buildTextField(TextEditingController controller, String label) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white70),
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.white54),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.white),
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickerButton({required IconData icon, required String label, required VoidCallback onPressed, String? filePath}) {
+    bool isSelected = filePath != null;
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, color: isSelected ? Colors.black : Colors.white),
+      label: Text(isSelected ? 'File Added!' : label),
+      style: ElevatedButton.styleFrom(
+        foregroundColor: isSelected ? Colors.black : Colors.white,
+        backgroundColor: isSelected ? Colors.purple.shade200 : Colors.white.withOpacity(0.2),
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
 }
