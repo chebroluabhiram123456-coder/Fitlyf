@@ -1,61 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'package:fitlyf/providers/workout_provider.dart';
-import 'package:fitlyf/widgets/frosted_glass_card.dart';
-import 'package:fitlyf/screens/workout_detail_screen.dart';
-import 'package:fitlyf/screens/add_exercise_screen.dart';
+import 'package.provider/provider.dart';
+// ... (other imports)
+import 'package:fitlyf/models/workout_session.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  // ... (StatefulWidget setup remains the same)
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Generate a list of dates for the calendar view, e.g., 7 days
-  final List<DateTime> _dates = List.generate(7, (index) {
-    return DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1)).add(Duration(days: index));
-  });
+  // ... (Date generation remains the same)
 
   @override
   Widget build(BuildContext context) {
-    // Use a Consumer to rebuild when the provider's data changes
     return Consumer<WorkoutProvider>(
       builder: (context, provider, child) {
         final workout = provider.selectedWorkout;
 
         return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          // ... (Gradient decoration remains the same)
           child: Scaffold(
-            backgroundColor: Colors.transparent,
+            // ... (Scaffold setup remains the same)
             body: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  // ... (Calendar header and title texts remain the same)
                   children: [
-                    _buildCalendarHeader(provider),
-                    const SizedBox(height: 30),
-                    const Text(
-                      "Get ready, AB",
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      "Here's your plan for ${DateFormat('EEEE').format(provider.selectedDate)}",
-                      style: const TextStyle(fontSize: 18, color: Colors.white70),
-                    ),
-                    const SizedBox(height: 30),
-                    _buildWorkoutCard(context, workout),
+                    _buildWorkoutCard(context, workout, provider),
                     const SizedBox(height: 20),
-                    _buildCustomWorkoutButton(context),
+                    _buildAddExerciseButton(context), // Changed from "Custom Workout"
                   ],
                 ),
               ),
@@ -66,115 +39,79 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCalendarHeader(WorkoutProvider provider) {
-    return SizedBox(
-      height: 70,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _dates.length,
-        itemBuilder: (context, index) {
-          final date = _dates[index];
-          final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
-          return _dateChip(
-            day: DateFormat('E').format(date).substring(0, 2), // "Mo", "Tu"
-            date: DateFormat('d').format(date),
-            isActive: isActive,
-            onTap: () {
-              // When tapped, call the provider to change the date
-              provider.changeSelectedDate(date);
-            },
-          );
-        },
-      ),
-    );
-  }
+  // ... (_buildCalendarHeader and _dateChip widgets remain the same)
+  
+  Widget _buildWorkoutCard(BuildContext context, WorkoutSession workout, WorkoutProvider provider) {
+    bool isRestDay = workout.exercises.isEmpty;
 
-  Widget _dateChip({required String day, required String date, required bool isActive, required VoidCallback onTap}) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 60,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(30),
-          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.2)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(day, style: TextStyle(color: isActive ? Colors.black : Colors.white70, fontSize: 12)),
-            const SizedBox(height: 4),
-            Text(date, style: TextStyle(color: isActive ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
+      onTap: () {
+        if (!isRestDay) {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
+        }
+      },
+      child: FrostedGlassCard(
+        child: isRestDay
+            ? _buildPlanWorkoutView(context, provider)
+            : Column(
+                // ... (The existing workout card UI remains the same)
+                children: [
+                  Text(
+                    workout.name,
+                    style: const TextStyle(fontSize: 18, color: Colors.white70),
+                  ),
+                  // ...
+                ],
+              ),
       ),
     );
-  }
-  
-  Widget _buildWorkoutCard(BuildContext context, WorkoutSession workout) {
-     return GestureDetector(
-       onTap: () {
-          if (workout.exercises.isNotEmpty) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
-          }
-       },
-       child: Hero(
-        tag: 'workout_card',
-        child: FrostedGlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _tag("Special for AB", Colors.purple.shade300),
-                  const SizedBox(width: 8),
-                  _tag("Gym", Colors.grey.shade700),
-                ],
-              ),
-              const SizedBox(height: 15),
-              const Text(
-                "60 min",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
-              ),
-              Text(
-                workout.name, // This will now update dynamically
-                style: const TextStyle(fontSize: 18, color: Colors.white70),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_forward, color: Colors.white),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-       ),
-     );
   }
 
-  Widget _tag(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  // NEW: View for when no workout is planned
+  Widget _buildPlanWorkoutView(BuildContext context, WorkoutProvider provider) {
+    return Column(
+      children: [
+        const Text("Nothing planned for today.", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 15),
+        ElevatedButton(
+          onPressed: () => _showMuscleGroupPicker(context, provider),
+          child: const Text("Plan a Workout"),
+          // ... (Style the button to match your UI)
+        ),
+      ],
+    );
+  }
+
+  // NEW: Dialog to pick a muscle group for the day's plan
+  void _showMuscleGroupPicker(BuildContext context, WorkoutProvider provider) {
+    final List<String> muscleGroups = [
+      'Chest', 'Bicep', 'Tricep', 'Shoulder', 'Back', 'Legs', 'Abs', 'Forearms'
+    ];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          // ... (Style the dialog to match your UI)
+          title: const Text("What muscle group to target?"),
+          content: Wrap(
+            spacing: 8.0,
+            children: muscleGroups.map((group) {
+              return ElevatedButton(
+                child: Text(group),
+                onPressed: () {
+                  provider.createWorkoutForDay(provider.selectedDate, group);
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
   
-  Widget _buildCustomWorkoutButton(BuildContext context) {
+  Widget _buildAddExerciseButton(BuildContext context) {
+    // This button now adds an exercise to your library
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -183,21 +120,21 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        // ... (Style remains the same, but you might want to change the text)
         child: const Row(
           children: [
-            Icon(Icons.tune, color: Colors.white, size: 28),
+            Icon(Icons.add, color: Colors.white, size: 28),
             SizedBox(width: 15),
             Text(
-              "Custom Workout",
+              "Add New Exercise to Library",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            Spacer(),
-            Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+            // ...
           ],
         ),
       ),
     );
   }
-}
 
+  // ... (_tag widget remains the same)
+}
