@@ -93,7 +93,7 @@
     },
     {
       "name": "flutter",
-      "rootUri": "file:///workspaces/Fitlyf/flutter/packages/flutter",
+      "rootUri": "file:///workspaces/fitlyf/flutter/packages/flutter",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -111,13 +111,13 @@
     },
     {
       "name": "flutter_test",
-      "rootUri": "file:///workspaces/Fitlyf/flutter/packages/flutter_test",
+      "rootUri": "file:///workspaces/fitlyf/flutter/packages/flutter_test",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
     {
       "name": "flutter_web_plugins",
-      "rootUri": "file:///workspaces/Fitlyf/flutter/packages/flutter_web_plugins",
+      "rootUri": "file:///workspaces/fitlyf/flutter/packages/flutter_web_plugins",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
@@ -267,7 +267,7 @@
     },
     {
       "name": "sky_engine",
-      "rootUri": "file:///workspaces/Fitlyf/flutter/bin/cache/pkg/sky_engine",
+      "rootUri": "file:///workspaces/fitlyf/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
@@ -368,10 +368,10 @@
       "languageVersion": "3.2"
     }
   ],
-  "generated": "2025-09-03T09:52:10.350350Z",
+  "generated": "2025-09-03T10:25:43.746947Z",
   "generator": "pub",
   "generatorVersion": "3.4.3",
-  "flutterRoot": "file:///workspaces/Fitlyf/flutter",
+  "flutterRoot": "file:///workspaces/fitlyf/flutter",
   "flutterVersion": "3.22.2",
   "pubCache": "file:///home/codespace/.pub-cache"
 }
