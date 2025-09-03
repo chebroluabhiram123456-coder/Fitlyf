@@ -15,4 +15,17 @@ class WorkoutProvider with ChangeNotifier {
   );
 
   WorkoutSession get todaysWorkout => _todaysWorkout;
+
+  // Method to add a new exercise to today's workout
+  void addExercise(Exercise exercise) {
+    _todaysWorkout.exercises.add(exercise);
+    notifyListeners(); // This tells the UI to update
+  }
+
+  // Method to mark an exercise as complete or incomplete
+  void toggleExerciseCompletion(String exerciseId) {
+    final exercise = _todaysWorkout.exercises.firstWhere((ex) => ex.id == exerciseId);
+    exercise.isCompleted = !exercise.isCompleted;
+    notifyListeners(); // This tells the UI to update
+  }
 }
