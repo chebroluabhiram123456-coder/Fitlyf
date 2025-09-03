@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/screens/home_screen.dart';
 import 'package:fitlyf/screens/progress_screen.dart';
+import 'package:fitlyf/screens/weekly_plan_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +55,7 @@ class _MainNavigatorState extends State<MainNavigator> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const ProgressScreen(),
-    const Center(child: Text("Coach Coming Soon!", style: TextStyle(fontSize: 20))), // Placeholder
+    const WeeklyPlanScreen(),
   ];
 
   @override
@@ -81,8 +82,8 @@ class _MainNavigatorState extends State<MainNavigator> {
             label: 'Analytics',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble),
-            label: 'Coach',
+            icon: Icon(Icons.calendar_month),
+            label: 'Plan',
           ),
         ],
       ),
