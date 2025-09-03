@@ -1,90 +1,103 @@
+// lib/providers/workout_provider.dart
 import 'package:flutter/material.dart';
-import 'package:fitlyf/models/exercise_model.dart';
-import 'package:fitlyf/models/workout_session.dart';
+import '../models/exercise_model.dart';
+import '../models/workout_session.dart'; // CORRECTED IMPORT
 
 class WorkoutProvider with ChangeNotifier {
-  final List<Exercise> _masterExerciseList = [];
-  final Map<DateTime, WorkoutSession> _dailyWorkouts = {};
+  // DATA
+  DateTime _selectedDate = DateTime.now();
 
-  // NEW: Centralized weekly plan (Key: 1=Monday, 7=Sunday)
-  final Map<int, List<String>> _weeklyPlan = {
-    1: ['Chest', 'Triceps'], // Monday
-    2: ['Back', 'Biceps'],    // Tuesday
-    3: ['Legs', 'Shoulders'], // Wednesday
-    4: ['Rest Day'],          // Thursday
-    5: ['Full Body'],         // Friday
-    6: ['Cardio'],            // Saturday
-    7: ['Rest Day'],          // Sunday
+  final Map<DateTime, double> _weightHistory = {
+    DateTime.now().subtract(const Duration(days: 10)): 78.5,
+    DateTime.now().subtract(const Duration(days: 7)): 78.0,
+    DateTime.now().subtract(const Duration(days: 1)): 77.2,
   };
 
-  DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
-  late WorkoutSession _selectedWorkout;
+  final List<Exercise> _masterExerciseList = [
+    Exercise(id: 'ex01', name: 'Push-ups'),
+    Exercise(id: 'ex02', name: 'Squats'),
+    Exercise(id: 'ex03', name: 'Pull-ups'),
+    Exercise(id: 'ex04', name: 'Plank'),
+    Exercise(id: 'ex05', name: 'Lunges'),
+    Exercise(id: 'ex06', name: 'Bench Press'),
+    Exercise(id: 'ex07', name: 'Deadlift'),
+  ];
 
-  WorkoutProvider() {
-    _loadWorkoutForDate(_selectedDate);
-  }
+  Map<int, String?> _weeklyPlan = {
+    0: 'wk01', // Monday -> Upper Body
+    1: null, // Tuesday -> Rest
+    2: 'wk02', // Wednesday -> Lower Body
+    3: null, // Thursday -> Rest
+    4: 'wk03', // Friday -> Full Body
+    5: null, // Saturday -> Rest
+    6: null, // Sunday -> Rest
+  };
 
-  // --- GETTERS ---
+  final List<WorkoutSession> _masterWorkoutList = [ // CORRECTED TYPE
+    WorkoutSession( // CORRECTED TYPE
+      id: 'wk01',
+      name: 'Upper Body Focus',
+      exercises: [
+        Exercise(id: 'ex01', name: 'Push-ups'),
+        Exercise(id: 'ex03', name: 'Pull-ups'),
+        Exercise(id: 'ex06', name: 'Bench Press'),
+      ],
+    ),
+    WorkoutSession( // CORRECTED TYPE
+      id: 'wk02',
+      name: 'Lower Body Strength',
+      exercises: [
+        Exercise(id: 'ex02', name: 'Squats'),
+        Exercise(id: 'ex05', name: 'Lunges'),
+        Exercise(id: 'ex07', name: 'Deadlift'),
+      ],
+    ),
+     WorkoutSession( // CORRECTED TYPE
+      id: 'wk03',
+      name: 'Full Body Core',
+      exercises: [
+        Exercise(id: 'ex01', name: 'Push-ups'),
+        Exercise(id: 'ex02', name: 'Squats'),
+        Exercise(id: 'ex04', name: 'Plank'),
+      ],
+    ),
+  ];
+
+  // GETTERS
   DateTime get selectedDate => _selectedDate;
-  WorkoutSession get selectedWorkout => _selectedWorkout;
+  Map<DateTime, double> get weightHistory => _weightHistory;
   List<Exercise> get masterExerciseList => _masterExerciseList;
-  Map<int, List<String>> get weeklyPlan => _weeklyPlan;
+  Map<int, String?> get weeklyPlan => _weeklyPlan;
 
-  // --- METHODS ---
-  void _loadWorkoutForDate(DateTime date) {
-    // Check if a specific workout has already been generated for this date
-    if (_dailyWorkouts.containsKey(date)) {
-      _selectedWorkout = _dailyWorkouts[date]!;
-      return;
-    }
-
-    // Otherwise, create a workout based on the weekly plan
-    final dayOfWeek = date.weekday;
-    final musclesToTarget = _weeklyPlan[dayOfWeek] ?? ['Rest Day'];
-
-    if (musclesToTarget.contains('Rest Day')) {
-      _selectedWorkout = WorkoutSession(date: date, name: 'Rest Day', exercises: []);
-    } else {
-      final exercisesForMuscle = _masterExerciseList
-          .where((ex) => musclesToTarget.contains(ex.muscleGroup))
-          .toList();
-
-      _selectedWorkout = WorkoutSession(
-        date: date,
-        name: musclesToTarget.join(' & '),
-        exercises: exercisesForMuscle,
-      );
-    }
+  WorkoutSession? get selectedWorkout { // CORRECTED TYPE
+    final dayOfWeek = _selectedDate.weekday - 1;
+    final workoutId = _weeklyPlan[dayOfWeek];
+    if (workoutId == null) return null;
+    return _masterWorkoutList.firstWhere((w) => w.id == workoutId);
   }
 
+  // METHODS
   void changeSelectedDate(DateTime newDate) {
     _selectedDate = newDate;
-    _loadWorkoutForDate(newDate);
-    notifyListeners();
-  }
-  
-  // NEW: Method to update the weekly plan
-  void updateWeeklyPlan(int weekday, List<String> muscles) {
-    if (muscles.isEmpty) {
-      _weeklyPlan[weekday] = ['Rest Day'];
-    } else {
-      _weeklyPlan[weekday] = muscles;
-    }
-    // Reload the current day's workout if it was the one that changed
-    if (_selectedDate.weekday == weekday) {
-      _loadWorkoutForDate(_selectedDate);
-    }
-    notifyListeners();
-  }
-
-  void addExerciseToMasterList(Exercise exercise) {
-    _masterExerciseList.add(exercise);
     notifyListeners();
   }
 
   void toggleExerciseCompletion(String exerciseId) {
-    final exercise = _selectedWorkout.exercises.firstWhere((ex) => ex.id == exerciseId);
-    exercise.isCompleted = !exercise.isCompleted;
+    final workout = selectedWorkout;
+    if (workout != null) {
+      final exercise = workout.exercises.firstWhere((ex) => ex.id == exerciseId);
+      exercise.isCompleted = !exercise.isCompleted;
+      notifyListeners();
+    }
+  }
+  
+  void addExerciseToMasterList(Exercise newExercise) {
+    _masterExerciseList.add(newExercise);
     notifyListeners();
+  }
+  
+  void updateWeeklyPlan(int dayIndex, String? workoutId) {
+      _weeklyPlan[dayIndex] = workoutId;
+      notifyListeners();
   }
 }
