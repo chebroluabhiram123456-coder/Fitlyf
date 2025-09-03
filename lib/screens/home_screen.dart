@@ -15,8 +15,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Generate a list of dates for the calendar view for the current week
   final List<DateTime> _dates = List.generate(7, (index) {
-    return DateTime.now().subtract(Duration(days: DateTime.now().weekday)).add(Duration(days: index));
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    return startOfWeek.add(Duration(days: index));
   });
 
   @override
@@ -53,9 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: const TextStyle(fontSize: 18, color: Colors.white70),
                       ),
                       const SizedBox(height: 20),
-                      _buildWeightLogger(context, provider),
+                      // Weight Logger would go here if you still have it
                       const SizedBox(height: 20),
-                      _buildWorkoutCard(context, workout, provider),
+                      _buildWorkoutCard(context, workout),
                       const SizedBox(height: 20),
                       _buildAddExerciseButton(context),
                     ],
@@ -114,199 +117,72 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  
+  Widget _buildWorkoutCard(BuildContext context, WorkoutSession workout) {
+     bool isRestDay = workout.name == 'Rest Day';
 
-  Widget _buildWeightLogger(BuildContext context, WorkoutProvider provider) {
-    final todaysWeight = provider.todaysWeight;
-    final TextEditingController weightController = TextEditingController();
-
-    void _showEditDialog() {
-      weightController.text = todaysWeight?.toString() ?? "";
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF2D1458),
-            title: const Text('Log Your Weight', style: TextStyle(color: Colors.white)),
-            content: TextField(
-              controller: weightController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: "Enter weight in kg",
-                hintStyle: TextStyle(color: Colors.white54),
-                suffixText: 'kg',
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-              ),
-              TextButton(
-                onPressed: () {
-                  final weight = double.tryParse(weightController.text);
-                  if (weight != null) {
-                    provider.logWeight(weight);
-                    Navigator.pop(context);
-                  }
-                },
-                // REMOVED 'const' because Colors.purple.shade200 is not a constant
-                child: Text('Save', style: TextStyle(color: Colors.purple.shade200)),
-              ),
-            ],
-          );
-        },
-      );
-    }
-
-    if (todaysWeight == null) {
-      return GestureDetector(
-        onTap: _showEditDialog,
+     return GestureDetector(
+       onTap: () {
+          if (!isRestDay) {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
+          }
+       },
+       child: Hero(
+        tag: 'workout_card',
         child: FrostedGlassCard(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          child: const Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.scale, color: Colors.white, size: 28),
-              SizedBox(width: 15),
-              Text(
-                "Log Your Today's Weight",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else {
-      return FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 28),
-            const SizedBox(width: 15),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Today's Weight",
-                  style: TextStyle(fontSize: 14, color: Colors.white70),
-                ),
-                Text(
-                  "$todaysWeight kg",
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.white70),
-              onPressed: _showEditDialog,
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  Widget _buildWorkoutCard(BuildContext context, WorkoutSession workout, WorkoutProvider provider) {
-    bool isRestDay = workout.exercises.isEmpty;
-
-    return GestureDetector(
-      onTap: () {
-        if (!isRestDay) {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
-        }
-      },
-      child: FrostedGlassCard(
-        child: isRestDay
-            ? _buildPlanWorkoutView(context, provider)
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      _tag("Special for AB", Colors.purple.shade300),
-                      const SizedBox(width: 8),
-                      _tag("Gym", Colors.grey.shade700),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  const Text(
-                    "60 min",
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                  Text(
-                    workout.name,
-                    style: const TextStyle(fontSize: 18, color: Colors.white70),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.arrow_forward, color: Colors.white),
-                      ),
-                    ],
-                  )
+                  _tag(isRestDay ? "Recovery" : "Workout", isRestDay ? Colors.blue.shade300 : Colors.purple.shade300),
+                  const SizedBox(width: 8),
+                  _tag("Gym", Colors.grey.shade700),
                 ],
               ),
-      ),
-    );
-  }
-
-  Widget _buildPlanWorkoutView(BuildContext context, WorkoutProvider provider) {
-    return Column(
-      children: [
-        const Text("Nothing planned for today.", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 15),
-        ElevatedButton(
-          onPressed: () => _showMuscleGroupPicker(context, provider),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.purple.shade200,
-            foregroundColor: Colors.black,
+              const SizedBox(height: 15),
+              Text(
+                isRestDay ? "Take a break" : "60 min",
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
+              ),
+              Text(
+                workout.name, // This will now update dynamically
+                style: const TextStyle(fontSize: 18, color: Colors.white70),
+              ),
+              if (!isRestDay) ...[
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_forward, color: Colors.white),
+                    ),
+                  ],
+                )
+              ]
+            ],
           ),
-          child: const Text("Plan a Workout"),
         ),
-      ],
-    );
+       ),
+     );
   }
 
-  void _showMuscleGroupPicker(BuildContext context, WorkoutProvider provider) {
-    final List<String> muscleGroups = [
-      'Chest', 'Bicep', 'Tricep', 'Shoulder', 'Back', 'Legs', 'Abs', 'Forearms'
-    ];
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2D1458),
-          title: const Text("What muscle group to target?", style: TextStyle(color: Colors.white)),
-          content: Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: muscleGroups.map((group) {
-              return ElevatedButton(
-                child: Text(group),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple.shade200,
-                  foregroundColor: Colors.black,
-                ),
-                onPressed: () {
-                  provider.createWorkoutForDay(provider.selectedDate, group);
-                  Navigator.pop(context);
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
+  Widget _tag(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
-
+  
   Widget _buildAddExerciseButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -330,17 +206,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _tag(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 }
