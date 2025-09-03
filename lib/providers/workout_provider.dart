@@ -3,14 +3,22 @@ import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/models/workout_session.dart';
 
 class WorkoutProvider with ChangeNotifier {
-  // --- (Existing code for exercises and workouts) ---
   final List<Exercise> _masterExerciseList = [];
   final Map<DateTime, WorkoutSession> _dailyWorkouts = {};
+
+  // NEW: Centralized weekly plan (Key: 1=Monday, 7=Sunday)
+  final Map<int, List<String>> _weeklyPlan = {
+    1: ['Chest', 'Triceps'], // Monday
+    2: ['Back', 'Biceps'],    // Tuesday
+    3: ['Legs', 'Shoulders'], // Wednesday
+    4: ['Rest Day'],          // Thursday
+    5: ['Full Body'],         // Friday
+    6: ['Cardio'],            // Saturday
+    7: ['Rest Day'],          // Sunday
+  };
+
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   late WorkoutSession _selectedWorkout;
-
-  // --- NEW: Weight Tracking Data ---
-  final Map<DateTime, double> _weightHistory = {};
 
   WorkoutProvider() {
     _loadWorkoutForDate(_selectedDate);
@@ -20,25 +28,52 @@ class WorkoutProvider with ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   WorkoutSession get selectedWorkout => _selectedWorkout;
   List<Exercise> get masterExerciseList => _masterExerciseList;
-  Map<DateTime, double> get weightHistory => _weightHistory;
-  
-  double? get todaysWeight {
-    return _weightHistory[DateUtils.dateOnly(DateTime.now())];
-  }
+  Map<int, List<String>> get weeklyPlan => _weeklyPlan;
 
   // --- METHODS ---
-  // --- (Existing methods for workouts) ---
   void _loadWorkoutForDate(DateTime date) {
-    _selectedWorkout = _dailyWorkouts[date] ?? WorkoutSession(
-      date: date,
-      name: 'Plan a workout!',
-      exercises: [],
-    );
+    // Check if a specific workout has already been generated for this date
+    if (_dailyWorkouts.containsKey(date)) {
+      _selectedWorkout = _dailyWorkouts[date]!;
+      return;
+    }
+
+    // Otherwise, create a workout based on the weekly plan
+    final dayOfWeek = date.weekday;
+    final musclesToTarget = _weeklyPlan[dayOfWeek] ?? ['Rest Day'];
+
+    if (musclesToTarget.contains('Rest Day')) {
+      _selectedWorkout = WorkoutSession(date: date, name: 'Rest Day', exercises: []);
+    } else {
+      final exercisesForMuscle = _masterExerciseList
+          .where((ex) => musclesToTarget.contains(ex.muscleGroup))
+          .toList();
+
+      _selectedWorkout = WorkoutSession(
+        date: date,
+        name: musclesToTarget.join(' & '),
+        exercises: exercisesForMuscle,
+      );
+    }
   }
 
   void changeSelectedDate(DateTime newDate) {
     _selectedDate = newDate;
     _loadWorkoutForDate(newDate);
+    notifyListeners();
+  }
+  
+  // NEW: Method to update the weekly plan
+  void updateWeeklyPlan(int weekday, List<String> muscles) {
+    if (muscles.isEmpty) {
+      _weeklyPlan[weekday] = ['Rest Day'];
+    } else {
+      _weeklyPlan[weekday] = muscles;
+    }
+    // Reload the current day's workout if it was the one that changed
+    if (_selectedDate.weekday == weekday) {
+      _loadWorkoutForDate(_selectedDate);
+    }
     notifyListeners();
   }
 
@@ -47,32 +82,9 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void createWorkoutForDay(DateTime date, String muscleGroup) {
-    final exercisesForMuscle = _masterExerciseList
-        .where((ex) => ex.muscleGroup.toLowerCase() == muscleGroup.toLowerCase())
-        .toList();
-    final newWorkout = WorkoutSession(
-      date: date,
-      name: muscleGroup,
-      exercises: exercisesForMuscle,
-    );
-    _dailyWorkouts[date] = newWorkout;
-    if (DateUtils.isSameDay(_selectedDate, date)) {
-      _selectedWorkout = newWorkout;
-    }
-    notifyListeners();
-  }
-
   void toggleExerciseCompletion(String exerciseId) {
     final exercise = _selectedWorkout.exercises.firstWhere((ex) => ex.id == exerciseId);
     exercise.isCompleted = !exercise.isCompleted;
     notifyListeners();
-  }
-
-  // --- NEW: Method to log weight ---
-  void logWeight(double weight) {
-    final today = DateUtils.dateOnly(DateTime.now());
-    _weightHistory[today] = weight;
-    notifyListeners(); // This is crucial to update the UI
   }
 }
