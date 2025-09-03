@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
-import 'package.intl/intl.dart';
+import 'package:intl/intl.dart'; // <-- IMPORT ADDED
 
 class WeeklyPlanScreen extends StatefulWidget {
   const WeeklyPlanScreen({super.key});
@@ -48,7 +48,7 @@ class _WeeklyPlanScreenState extends State<WeeklyPlanScreen> {
 
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: FrostedGlassCard(
+              child: FrostedGlassCard( // <-- This will now be recognized
                 borderRadius: BorderRadius.circular(15),
                 padding: const EdgeInsets.all(20),
                 child: Row(
@@ -79,7 +79,6 @@ class _WeeklyPlanScreenState extends State<WeeklyPlanScreen> {
                     IconButton(
                       icon: const Icon(Icons.edit, color: Colors.white70),
                       onPressed: () {
-                        // Logic to edit the plan for this day
                         _showEditDialog(day, workout);
                       },
                     ),
@@ -123,7 +122,8 @@ class _WeeklyPlanScreenState extends State<WeeklyPlanScreen> {
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Save', style: TextStyle(color: Colors.purple.shade200)),
+              // REMOVED 'const' because Colors.purple.shade200 is not a constant
+              child: Text('Save', style: TextStyle(color: Colors.purple.shade200)),
             ),
           ],
         );
