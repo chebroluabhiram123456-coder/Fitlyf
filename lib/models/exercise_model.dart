@@ -1,25 +1,14 @@
+// lib/models/exercise_model.dart
 class Exercise {
-  String id;
-  String name;
-  String muscleGroup; // <-- ADD THIS
-  String? description; // <-- ADD THIS
-  int sets;
-  int reps;
-  double weight; // in Kilograms
+  final String id;
+  final String name;
+  final String muscleGroup; // The new required field
   bool isCompleted;
-  String? imagePath;
-  String? videoPath;
 
   Exercise({
     required this.id,
     required this.name,
-    required this.muscleGroup, // <-- ADD THIS
-    this.description, // <-- ADD THIS
-    this.sets = 3,
-    this.reps = 10,
-    this.weight = 10.0,
+    required this.muscleGroup, // Added to the constructor
     this.isCompleted = false,
-    this.imagePath,
-    this.videoPath,
   });
 }
