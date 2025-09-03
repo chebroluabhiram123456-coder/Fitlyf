@@ -10,13 +10,15 @@ class ProgressScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use a Consumer to get the latest data
     return Consumer<WorkoutProvider>(
       builder: (context, provider, child) {
         final weightHistory = provider.weightHistory.entries.toList()
           ..sort((a, b) => a.key.compareTo(b.key));
         
-        final workoutCount = provider.masterExerciseList.length;
+        // Calculate workout completion stats
+        final totalExercises = provider.masterExerciseList.length;
+        final completedExercises = provider.masterExerciseList.where((ex) => ex.isCompleted).length;
+        final completionPercentage = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0.0;
 
         return Container(
           decoration: const BoxDecoration(
@@ -55,11 +57,26 @@ class ProgressScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   FrostedGlassCard(
                     padding: const EdgeInsets.all(20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
                       children: [
-                        const Text("Total Exercises Created:", style: TextStyle(fontSize: 16)),
-                        Text("$workoutCount", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                        _buildStatRow("Total Exercises Created:", "$totalExercises"),
+                        const SizedBox(height: 15),
+                        _buildStatRow("Exercises Completed:", "$completedExercises"),
+                        const SizedBox(height: 20),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Completion: ${completionPercentage.toStringAsFixed(1)}%", style: const TextStyle(color: Colors.white70)),
+                            const SizedBox(height: 8),
+                            LinearProgressIndicator(
+                              value: completionPercentage / 100,
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.purple.shade200),
+                              minHeight: 8,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -69,6 +86,16 @@ class ProgressScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildStatRow(String title, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 16)),
+        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 
