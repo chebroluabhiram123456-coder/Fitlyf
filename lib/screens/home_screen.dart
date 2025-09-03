@@ -1,98 +1,124 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final workoutProvider = Provider.of<WorkoutProvider>(context);
-    final workout = workoutProvider.todaysWorkout;
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCalendarHeader(),
-                const SizedBox(height: 30),
-                const Text(
-                  "Get ready, AB",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                const Text(
-                  "Let's smash today's workout!",
-                  style: TextStyle(fontSize: 18, color: Colors.white70),
-                ),
-                const SizedBox(height: 30),
-                _buildWorkoutCard(context, workout),
-                const SizedBox(height: 20),
-                _buildCustomWorkoutButton(context),
-              ],
+class _HomeScreenState extends State<HomeScreen> {
+  // Generate a list of dates for the calendar view, e.g., 7 days
+  final List<DateTime> _dates = List.generate(7, (index) {
+    return DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1)).add(Duration(days: index));
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Use a Consumer to rebuild when the provider's data changes
+    return Consumer<WorkoutProvider>(
+      builder: (context, provider, child) {
+        final workout = provider.selectedWorkout;
+
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCalendarHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _dateChip("Su", "10", false),
-        _dateChip("Mo", "11", true),
-        _dateChip("Tu", "12", false),
-        _dateChip("We", "13", false),
-        _dateChip("Th", "14", false),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            shape: BoxShape.circle,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCalendarHeader(provider),
+                    const SizedBox(height: 30),
+                    const Text(
+                      "Get ready, AB",
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      "Here's your plan for ${DateFormat('EEEE').format(provider.selectedDate)}",
+                      style: const TextStyle(fontSize: 18, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 30),
+                    _buildWorkoutCard(context, workout),
+                    const SizedBox(height: 20),
+                    _buildCustomWorkoutButton(context),
+                  ],
+                ),
+              ),
+            ),
           ),
-          child: const Icon(Icons.more_horiz, color: Colors.white),
-        )
-      ],
+        );
+      },
     );
   }
 
-  Widget _dateChip(String day, String date, bool isActive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.transparent,
-        borderRadius: BorderRadius.circular(30),
+  Widget _buildCalendarHeader(WorkoutProvider provider) {
+    return SizedBox(
+      height: 70,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _dates.length,
+        itemBuilder: (context, index) {
+          final date = _dates[index];
+          final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
+          return _dateChip(
+            day: DateFormat('E').format(date).substring(0, 2), // "Mo", "Tu"
+            date: DateFormat('d').format(date),
+            isActive: isActive,
+            onTap: () {
+              // When tapped, call the provider to change the date
+              provider.changeSelectedDate(date);
+            },
+          );
+        },
       ),
-      child: Column(
-        children: [
-          Text(day, style: TextStyle(color: isActive ? Colors.black : Colors.white70, fontSize: 12)),
-          const SizedBox(height: 4),
-          Text(date, style: TextStyle(color: isActive ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        ],
+    );
+  }
+
+  Widget _dateChip({required String day, required String date, required bool isActive, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 60,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(day, style: TextStyle(color: isActive ? Colors.black : Colors.white70, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(date, style: TextStyle(color: isActive ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
       ),
     );
   }
   
-  Widget _buildWorkoutCard(BuildContext context, var workout) {
+  Widget _buildWorkoutCard(BuildContext context, WorkoutSession workout) {
      return GestureDetector(
        onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
+          if (workout.exercises.isNotEmpty) {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
+          }
        },
        child: Hero(
         tag: 'workout_card',
@@ -113,7 +139,7 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
               ),
               Text(
-                workout.name,
+                workout.name, // This will now update dynamically
                 style: const TextStyle(fontSize: 18, color: Colors.white70),
               ),
               const SizedBox(height: 20),
@@ -174,3 +200,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
