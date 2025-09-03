@@ -1,6 +1,8 @@
 class Exercise {
   String id;
   String name;
+  String muscleGroup; // <-- ADD THIS
+  String? description; // <-- ADD THIS
   int sets;
   int reps;
   double weight; // in Kilograms
@@ -11,6 +13,8 @@ class Exercise {
   Exercise({
     required this.id,
     required this.name,
+    required this.muscleGroup, // <-- ADD THIS
+    this.description, // <-- ADD THIS
     this.sets = 3,
     this.reps = 10,
     this.weight = 10.0,
