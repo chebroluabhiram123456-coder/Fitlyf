@@ -1,13 +1,8 @@
-import 'package:fitflow/models/exercise_model.dart';
+import 'package:fitlyf/models/exercise_model.dart';
 
 class WorkoutSession {
   DateTime date;
-  String muscleTarget;
+  String name;
   List<Exercise> exercises;
-
-  WorkoutSession({
-    required this.date,
-    required this.muscleTarget,
-    required this.exercises,
-  });
+  WorkoutSession({required this.date, required this.name, required this.exercises});
 }
