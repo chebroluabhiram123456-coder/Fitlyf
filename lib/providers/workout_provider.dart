@@ -1,63 +1,71 @@
-import 'package:flutter/material.dart';
-import 'package:fitlyf/models/exercise_model.dart';
-import 'package:fitlyf/models/workout_session.dart';
+import 'package.flutter/material.dart';
+import 'package.fitlyf/models/exercise_model.dart';
+import 'package.fitlyf/models/workout_session.dart';
 
 class WorkoutProvider with ChangeNotifier {
-  // --- DATABASE SIMULATION ---
-  // In a real app, this would come from a database.
-  final List<WorkoutSession> _allWorkouts = [
-    WorkoutSession(
-      date: DateUtils.dateOnly(DateTime.now()),
-      name: 'Chest, Shoulders, Core',
-      exercises: [
-        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', weight: 45),
-        Exercise(id: 'ex2', name: 'Barbell Push Press', weight: 30),
-      ],
-    ),
-    WorkoutSession(
-      date: DateUtils.dateOnly(DateTime.now().add(const Duration(days: 1))),
-      name: 'Legs & Back',
-      exercises: [
-        Exercise(id: 'ex3', name: 'Squats', weight: 80),
-        Exercise(id: 'ex4', name: 'Deadlifts', weight: 100),
-      ],
-    ),
-  ];
+  // This is your library of all created exercises. Starts empty.
+  final List<Exercise> _masterExerciseList = [];
+
+  // This will hold the workouts for different dates as you create them.
+  final Map<DateTime, WorkoutSession> _dailyWorkouts = {};
 
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   late WorkoutSession _selectedWorkout;
 
   WorkoutProvider() {
-    // Initialize with today's workout
+    // Initialize with an empty workout for today
     _loadWorkoutForDate(_selectedDate);
   }
 
   // --- GETTERS ---
   DateTime get selectedDate => _selectedDate;
   WorkoutSession get selectedWorkout => _selectedWorkout;
+  List<Exercise> get masterExerciseList => _masterExerciseList;
 
   // --- METHODS ---
   void _loadWorkoutForDate(DateTime date) {
-    // Try to find a workout for the given date
-    _selectedWorkout = _allWorkouts.firstWhere(
-      (session) => DateUtils.isSameDay(session.date, date),
-      // If no workout is found, create a default "Rest Day" session
-      orElse: () => WorkoutSession(
-        date: date,
-        name: 'Rest Day',
-        exercises: [],
-      ),
+    // If a workout for the date exists, load it. Otherwise, create an empty one.
+    _selectedWorkout = _dailyWorkouts[date] ?? WorkoutSession(
+      date: date,
+      name: 'Plan a workout!',
+      exercises: [],
     );
   }
 
   void changeSelectedDate(DateTime newDate) {
     _selectedDate = newDate;
     _loadWorkoutForDate(newDate);
-    notifyListeners(); // This is crucial to update the UI
+    notifyListeners();
   }
 
-  void addExercise(Exercise exercise) {
-    _selectedWorkout.exercises.add(exercise);
+  // Adds a new exercise to your main library
+  void addExerciseToMasterList(Exercise exercise) {
+    _masterExerciseList.add(exercise);
+    notifyListeners();
+  }
+
+  // Creates a workout for the selected day based on a muscle group
+  void createWorkoutForDay(DateTime date, String muscleGroup) {
+    // Find all exercises in your library that match the muscle group
+    final exercisesForMuscle = _masterExerciseList
+        .where((ex) => ex.muscleGroup.toLowerCase() == muscleGroup.toLowerCase())
+        .toList();
+
+    // Create a new workout session with those exercises
+    final newWorkout = WorkoutSession(
+      date: date,
+      name: muscleGroup,
+      exercises: exercisesForMuscle,
+    );
+
+    // Save this workout for the specific date
+    _dailyWorkouts[date] = newWorkout;
+    
+    // Update the currently selected workout if it's for the same day
+    if (DateUtils.isSameDay(_selectedDate, date)) {
+      _selectedWorkout = newWorkout;
+    }
+
     notifyListeners();
   }
 
