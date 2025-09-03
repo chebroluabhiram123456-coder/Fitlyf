@@ -1,35 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:fitflow/providers/workout_provider.dart';
-import 'package:fitflow/screens/home_screen.dart';
-import 'package:fitflow/screens/progress_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:fitlyf/providers/workout_provider.dart';
+import 'package:fitlyf/screens/home_screen.dart';
+import 'package:fitlyf/screens/progress_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
   runApp(
     ChangeNotifierProvider(
       create: (context) => WorkoutProvider(),
-      child: const FitFlowApp(),
+      child: const FitlyfApp(),
     ),
   );
 }
 
-class FitFlowApp extends StatelessWidget {
-  const FitFlowApp({super.key});
+class FitlyfApp extends StatelessWidget {
+  const FitlyfApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FitFlow',
+      title: 'Fitlyf',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: Colors.blueAccent,
-        fontFamily: 'Roboto', // Using a common bold-capable font
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          bodyMedium: TextStyle(fontSize: 16),
-          headlineSmall: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-          titleLarge: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 22),
+        scaffoldBackgroundColor: const Color(0xFF2D1458),
+        textTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme).apply(
+          bodyColor: Colors.white,
+          displayColor: Colors.white,
         ),
       ),
       home: const MainNavigator(),
@@ -49,42 +54,35 @@ class _MainNavigatorState extends State<MainNavigator> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const ProgressScreen(),
+    const Center(child: Text("Coach Coming Soon!", style: TextStyle(fontSize: 20))), // Placeholder
   ];
-
-  void _onTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-        child: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: _onTap,
-        backgroundColor: Colors.black.withOpacity(0.5),
-        selectedItemColor: Colors.cyanAccent,
-        unselectedItemColor: Colors.white70,
-        type: BottomNavigationBarType.fixed,
+        onTap: (index) => setState(() => _currentIndex = index),
+        backgroundColor: const Color(0xFF3E246E).withOpacity(0.8),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white54,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center),
             label: 'Workout',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Progress',
+            icon: Icon(Icons.analytics),
+            label: 'Analytics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble),
+            label: 'Coach',
           ),
         ],
       ),
