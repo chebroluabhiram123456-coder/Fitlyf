@@ -1,6 +1,9 @@
-import 'dart:io';
+import 'dart.io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:fitlyf/models/exercise_model.dart';
+import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 
 class AddExerciseScreen extends StatefulWidget {
@@ -35,9 +38,15 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
   }
 
   void _saveExercise() {
-    // Here you would typically use your provider to save the new exercise
-    // For example: Provider.of<WorkoutProvider>(context, listen: false).addExercise(...);
     if (_nameController.text.isNotEmpty) {
+      final newExercise = Exercise(
+        id: DateTime.now().millisecondsSinceEpoch.toString(), // Unique ID
+        name: _nameController.text,
+        imagePath: _imageFile?.path,
+        videoPath: _videoFile?.path,
+      );
+      // Use the provider to add the new exercise
+      Provider.of<WorkoutProvider>(context, listen: false).addExercise(newExercise);
       Navigator.pop(context); // Go back after saving
     }
   }
