@@ -1,7 +1,7 @@
-import 'dart.io';
+import 'dart:io'; // <-- THIS LINE IS NOW CORRECT
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart'; // <-- IMPORT ADDED
+import 'package:provider/provider.dart';
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
@@ -109,7 +109,6 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     );
   }
 
-  // --- HELPER METHODS THAT WERE MISSING ---
   Widget _buildMuscleGroupSelector() {
     return DropdownButtonFormField<String>(
       value: _selectedMuscleGroup,
