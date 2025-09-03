@@ -10,11 +10,9 @@ class WorkoutDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use a Consumer to listen for changes in the provider
     return Consumer<WorkoutProvider>(
       builder: (context, provider, child) {
-        // Get the latest version of the workout from the provider
-        final updatedWorkout = provider.todaysWorkout;
+        final updatedWorkout = provider.selectedWorkout;
 
         return Scaffold(
           backgroundColor: const Color(0xFF1A0E38),
@@ -54,44 +52,37 @@ class WorkoutDetailScreen extends StatelessWidget {
   }
 
   Widget _buildExerciseListItem(BuildContext context, Exercise exercise) {
-    return GestureDetector(
-      onTap: () {
-        // When tapped, call the provider method to toggle completion
-        Provider.of<WorkoutProvider>(context, listen: false)
-            .toggleExerciseCompletion(exercise.id);
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    exercise.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      // Change style if completed
-                      decoration: exercise.isCompleted ? TextDecoration.lineThrough : null,
-                      color: exercise.isCompleted ? Colors.white54 : Colors.white,
-                    ),
-                  ),
-                  Text(
-                    '${exercise.sets} sets x ${exercise.reps} reps x ${exercise.weight} kg',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: exercise.isCompleted ? Colors.white38 : Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Show a checkmark icon if the exercise is completed
-            if (exercise.isCompleted)
-              const Icon(Icons.check_circle, color: Colors.greenAccent),
-          ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        tileColor: exercise.isCompleted ? Colors.black.withOpacity(0.3) : Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Text(
+          exercise.name,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            decoration: exercise.isCompleted ? TextDecoration.lineThrough : null,
+            color: exercise.isCompleted ? Colors.white54 : Colors.white,
+          ),
+        ),
+        subtitle: Text(
+          '${exercise.sets} sets x ${exercise.reps} reps x ${exercise.weight} kg',
+          style: TextStyle(
+            fontSize: 14,
+            color: exercise.isCompleted ? Colors.white38 : Colors.white70,
+          ),
+        ),
+        trailing: Checkbox(
+          value: exercise.isCompleted,
+          onChanged: (bool? value) {
+            Provider.of<WorkoutProvider>(context, listen: false)
+                .toggleExerciseCompletion(exercise.id);
+          },
+          activeColor: Colors.purple.shade200,
+          checkColor: Colors.black,
+          side: const BorderSide(color: Colors.white70),
         ),
       ),
     );
