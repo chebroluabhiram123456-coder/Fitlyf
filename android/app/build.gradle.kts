@@ -1,4 +1,3 @@
-// Import statements to fix the "Unresolved reference" error
 import java.util.Properties
 import java.io.FileInputStream
 
@@ -20,7 +19,7 @@ val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 android {
     namespace = "com.example.fitlyf"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973" // <-- ADD THIS LINE
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
