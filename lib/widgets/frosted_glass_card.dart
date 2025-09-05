@@ -3,32 +3,28 @@ import 'package:flutter/material.dart';
 
 class FrostedGlassCard extends StatelessWidget {
   final Widget child;
-  final double blur;
-  final BorderRadius borderRadius;
-  final EdgeInsets padding;
+  final EdgeInsetsGeometry? padding;
 
   const FrostedGlassCard({
-    super.key,
+    Key? key,
     required this.child,
-    this.blur = 10.0,
-    this.borderRadius = const BorderRadius.all(Radius.circular(20)),
-    this.padding = const EdgeInsets.all(16.0),
-  });
+    this.padding = const EdgeInsets.all(20.0),
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: borderRadius,
+      borderRadius: BorderRadius.circular(25.0),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
-            borderRadius: borderRadius,
+            borderRadius: BorderRadius.circular(25.0),
             border: Border.all(
               color: Colors.white.withOpacity(0.2),
-              width: 1.5,
+              width: 1.0,
             ),
           ),
           child: child,
