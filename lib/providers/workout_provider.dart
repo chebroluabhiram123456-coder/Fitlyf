@@ -64,7 +64,8 @@ class WorkoutProvider with ChangeNotifier {
     _selectedWorkout = _allWorkouts.firstWhere(
       (session) => DateUtils.isSameDay(session.date, date),
       orElse: () => WorkoutSession(
-        id: DateTime.now().toIso801String(),
+        // TYPO FIX: Changed toIso801String to toIso8601String
+        id: DateTime.now().toIso8601String(),
         date: date,
         name: 'Rest Day',
         exercises: [],
@@ -94,9 +95,7 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- NEW METHOD TO LOG WEIGHT ---
   void logUserWeight(double newWeight) {
-    // Adds a new entry for today's date. If an entry for today already exists, it's updated.
     _weightHistory[DateUtils.dateOnly(DateTime.now())] = newWeight;
     notifyListeners();
   }
