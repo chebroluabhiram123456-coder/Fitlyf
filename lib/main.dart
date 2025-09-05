@@ -1,3 +1,5 @@
+// lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/screens/home_screen.dart';
 import 'package:fitlyf/screens/progress_screen.dart';
-import 'package:fitlyf/screens/weekly_plan_screen.dart';
+import 'package:fitlyf/screens/weekly_plan_screen.dart'; // Import the new screen
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,10 +54,12 @@ class MainNavigator extends StatefulWidget {
 
 class _MainNavigatorState extends State<MainNavigator> {
   int _currentIndex = 0;
+  
+  // Add the new screen to the list of screens
   final List<Widget> _screens = [
     const HomeScreen(),
     const ProgressScreen(),
-    const WeeklyPlanScreen(),
+    const WeeklyPlanScreen(), // New screen added here
   ];
 
   @override
@@ -81,6 +85,7 @@ class _MainNavigatorState extends State<MainNavigator> {
             icon: Icon(Icons.analytics),
             label: 'Analytics',
           ),
+          // New navigation item for the Plan screen
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month),
             label: 'Plan',
@@ -90,3 +95,4 @@ class _MainNavigatorState extends State<MainNavigator> {
     );
   }
 }
+
