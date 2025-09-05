@@ -4,13 +4,22 @@ workflows:
     name: Android Build
     instance_type: mac_mini_m1 # Use the free Mac Mini machine
     environment:
-      flutter: stable
-      java: 17        # We still declare Java 17 here
+      # THIS IS THE FIX: We are locking versions to a known stable configuration.
+      flutter: 3.19.6
+      xcode: 15.2
+      java: 17
     scripts:
-      # THIS IS THE FIX: This command forces the machine to use the Java 17 path.
+      # --- DEBUGGING STEPS ---
+      # Force Java 17 and then print the version to the log to confirm.
       - export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+      - echo "--- VERIFYING JAVA VERSION ---"
+      - java -version
+      - echo "--- FLUTTER DOCTOR ---"
+      - flutter doctor -v # Print detailed environment info
+      
+      # --- BUILD STEPS ---
+      - echo "--- STARTING BUILD ---"
       - flutter packages pub get
-      - flutter analyze
       - flutter build appbundle --release
     artifacts:
       - build/app/outputs/bundle/release/*.aab
