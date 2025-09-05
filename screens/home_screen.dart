@@ -1,5 +1,3 @@
-// lib/screens/home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
@@ -7,7 +5,7 @@ import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:fitlyf/models/workout_session.dart';
+import 'package:fitlyf/models/workout_model.dart'; // IMPORTANT: Using Workout, not WorkoutSession
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,7 +13,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final workoutProvider = Provider.of<WorkoutProvider>(context);
-    final workout = workoutProvider.selectedWorkout;
+    final workout = workoutProvider.selectedWorkout; // This is now a Workout? object
 
     return Container(
       decoration: const BoxDecoration(
@@ -36,19 +34,22 @@ class HomeScreen extends StatelessWidget {
                 _buildCalendarHeader(workoutProvider),
                 const SizedBox(height: 30),
                 const Text(
-                  "Get ready, AB",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  "Get ready, User", // Changed from "AB" to be more generic
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 Text(
                   "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
                   style: const TextStyle(fontSize: 18, color: Colors.white70),
                 ),
                 const SizedBox(height: 30),
-                _buildWorkoutCard(context, workout),
+                // THE FIX: Check if workout is null before building card
+                if (workout != null)
+                  _buildWorkoutCard(context, workout)
+                else
+                  _buildRestDayCard(), // Show a special card on rest days
                 const SizedBox(height: 20),
                 _buildWeightTrackerCard(context, workoutProvider),
-                const SizedBox(height: 20), // Added space
-                // --- NEW "CREATE EXERCISE" BUTTON ADDED HERE ---
+                const SizedBox(height: 20),
                 _buildCreateExerciseButton(context),
               ],
             ),
@@ -57,8 +58,18 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-  
-  // --- THIS ENTIRE WIDGET IS NEW ---
+
+  Widget _buildRestDayCard() {
+    return const FrostedGlassCard(
+      child: Center(
+        child: Text(
+          "It's a Rest Day! 😌",
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCreateExerciseButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -75,7 +86,7 @@ class HomeScreen extends StatelessWidget {
             SizedBox(width: 15),
             Text(
               "Create Your Own Exercise",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             Spacer(),
             Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
@@ -99,7 +110,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 const Text(
                   "Current Weight",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 Text(
                   "${provider.latestWeight} kg",
@@ -158,7 +169,8 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildCalendarHeader(WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
-      return DateTime.now().subtract(Duration(days: DateTime.now().weekday % 7)).add(Duration(days: index));
+      final now = DateTime.now();
+      return now.subtract(Duration(days: now.weekday - 1)).add(Duration(days: index));
     });
     return SizedBox(
       height: 70,
@@ -169,7 +181,7 @@ class HomeScreen extends StatelessWidget {
           final date = dates[index];
           final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
           return _dateChip(
-            day: DateFormat('E').format(date).substring(0, 2),
+            day: DateFormat('E').format(date),
             date: DateFormat('d').format(date),
             isActive: isActive,
             onTap: () {
@@ -205,7 +217,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildWorkoutCard(BuildContext context, WorkoutSession workout) {
+  // THE FIX: Changed parameter from WorkoutSession to Workout
+  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
        onTap: () {
           if (workout.exercises.isNotEmpty) {
@@ -213,7 +226,7 @@ class HomeScreen extends StatelessWidget {
           }
        },
        child: Hero(
-        tag: 'workout_card',
+        tag: 'workout_card', // The tag for the animation
         child: FrostedGlassCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
