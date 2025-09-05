@@ -1,0 +1,18 @@
+# Codemagic build configuration for Fitlyf Android app
+workflows:
+  android-build:
+    name: Android Build
+    instance_type: linux_x2  # This selects a Linux machine, which is required for Android builds.
+    environment:
+      flutter: 3.22.2        # The Flutter version you're using.
+      java: 17             # **THE FIX**: This explicitly sets the Java version to 17.
+    scripts:
+      - flutter packages pub get
+      - flutter analyze
+      - flutter build appbundle --release
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+    publishing:
+      email:
+        recipients:
+          - your.email@example.com # Optional: Add your email to get the build file
