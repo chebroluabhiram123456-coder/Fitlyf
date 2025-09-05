@@ -5,8 +5,14 @@ import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/models/workout_session.dart';
 
 class WorkoutProvider with ChangeNotifier {
-  // --- DATABASE SIMULATION ---
-  // A map to hold the plan for each day of the week.
+  // --- ADDED THIS BACK IN ---
+  final Map<DateTime, double> _weightHistory = {
+    DateTime.now().subtract(const Duration(days: 30)): 75.0,
+    DateTime.now().subtract(const Duration(days: 20)): 74.5,
+    DateTime.now().subtract(const Duration(days: 10)): 74.0,
+    DateTime.now(): 73.5,
+  };
+  
   final Map<String, String> _weeklyPlan = {
     'Monday': 'Chest, Shoulders, Core',
     'Tuesday': 'Legs & Back',
@@ -19,6 +25,7 @@ class WorkoutProvider with ChangeNotifier {
 
   final List<WorkoutSession> _allWorkouts = [
     WorkoutSession(
+      id: 'ws1', // Added ID
       date: DateUtils.dateOnly(DateTime.now()),
       name: 'Chest, Shoulders, Core',
       exercises: [
@@ -27,6 +34,7 @@ class WorkoutProvider with ChangeNotifier {
       ],
     ),
     WorkoutSession(
+      id: 'ws2', // Added ID
       date: DateUtils.dateOnly(DateTime.now().add(const Duration(days: 1))),
       name: 'Legs & Back',
       exercises: [
@@ -47,12 +55,19 @@ class WorkoutProvider with ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   WorkoutSession get selectedWorkout => _selectedWorkout;
   Map<String, String> get weeklyPlan => _weeklyPlan;
+  Map<DateTime, double> get weightHistory => _weightHistory; // Added getter
+
+  // New getter to replace 'masterExerciseList'
+  List<Exercise> get allExercises {
+    return _allWorkouts.expand((session) => session.exercises).toList();
+  }
 
   // --- METHODS ---
   void _loadWorkoutForDate(DateTime date) {
     _selectedWorkout = _allWorkouts.firstWhere(
       (session) => DateUtils.isSameDay(session.date, date),
       orElse: () => WorkoutSession(
+        id: DateTime.now().toIso8601String(), // Added ID
         date: date,
         name: 'Rest Day',
         exercises: [],
@@ -66,7 +81,6 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  // New method to update the weekly plan
   void updateWeeklyPlan(String day, String muscleGroup) {
       _weeklyPlan[day] = muscleGroup;
       notifyListeners();
