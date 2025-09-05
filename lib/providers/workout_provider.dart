@@ -1,27 +1,24 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart'; // Needed for DateUtils
-import '../models/workout_model.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Needed for date formatting
+
+// ----- THE FIX: These imports were missing -----
+import '../models/workout_model.dart'; 
 import '../models/exercise_model.dart';
 
 class WorkoutProvider with ChangeNotifier {
   // --- DATA ---
   final List<Workout> _workouts = [
     Workout(
-      id: 'w1',
-      name: 'Full Body Workout',
-      description: 'A comprehensive workout targeting all major muscle groups.',
+      id: 'w1', name: 'Full Body Workout', description: 'A comprehensive workout targeting all major muscle groups.',
       exercises: [
-        // Updated with sets and reps
         Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
         Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
       ],
     ),
     Workout(
-      id: 'w2',
-      name: 'Leg Day',
-      description: 'A workout focused on strengthening your lower body.',
+      id: 'w2', name: 'Leg Day', description: 'A workout focused on strengthening your lower body.',
       exercises: [
-        // Updated with sets and reps
         Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 4, reps: 6),
         Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back and Hamstrings', sets: 3, reps: 5),
       ],
@@ -41,12 +38,22 @@ class WorkoutProvider with ChangeNotifier {
 
   DateTime _selectedDate = DateTime.now();
 
-  // --- GETTERS AND METHODS (This section fixes all the errors) ---
+  // --- GETTERS AND METHODS ---
 
   List<Workout> get workouts => [..._workouts];
   Map<String, String> get weeklyPlan => {..._weeklyPlan};
   Map<DateTime, double> get weightHistory => {..._weightHistory};
   DateTime get selectedDate => _selectedDate;
+
+  // This getter fixes the final error for the home screen
+  Workout? get selectedWorkout {
+    final dayOfWeek = DateFormat('EEEE').format(_selectedDate);
+    final workoutName = _weeklyPlan[dayOfWeek];
+    if (workoutName == null || workoutName == 'Rest') {
+      return null;
+    }
+    return _workouts.firstWhere((w) => w.name == workoutName);
+  }
 
   double get latestWeight {
     if (_weightHistory.isEmpty) return 0.0;
