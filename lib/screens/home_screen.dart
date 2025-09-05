@@ -5,8 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
-import 'package:fitlyf/screens/add_exercise_screen.dart';
+// Note: I did not have this file in my folder so this might give error - I am assuming there is an 'add_exercise_screen.dart' file
+// import 'package:fitlyf/screens/add_exercise_screen.dart'; 
 import 'package:intl/intl.dart';
+// MISSING IMPORT ADDED HERE
+import 'package:fitlyf/models/workout_session.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -45,7 +48,6 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 30),
                 _buildWorkoutCard(context, workout),
                 const SizedBox(height: 20),
-                // --- NEW WEIGHT TRACKER CARD ADDED HERE ---
                 _buildWeightTrackerCard(context, workoutProvider),
               ],
             ),
@@ -55,7 +57,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- THIS ENTIRE WIDGET IS NEW ---
   Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
     return GestureDetector(
       onTap: () => _showLogWeightDialog(context, provider),
@@ -86,7 +87,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- THIS DIALOG LOGIC IS NEW ---
   void _showLogWeightDialog(BuildContext context, WorkoutProvider provider) {
     final TextEditingController controller = TextEditingController();
     
@@ -128,7 +128,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // (The rest of the home_screen.dart file remains the same)
   Widget _buildCalendarHeader(WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       return DateTime.now().subtract(Duration(days: DateTime.now().weekday % 7)).add(Duration(days: index));
