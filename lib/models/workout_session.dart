@@ -1,17 +1,17 @@
 // lib/models/workout_session.dart
-import 'exercise_model.dart';
+
+import 'package:fitlyf/models/exercise_model.dart';
 
 class WorkoutSession {
-  // FIX: Added the required 'id' field.
-  final String id;
-  final String name;
-  final DateTime? date; // Made date optional for template workouts
-  final List<Exercise> exercises;
+  String id; // Added this ID
+  DateTime date;
+  String name;
+  List<Exercise> exercises;
 
   WorkoutSession({
-    required this.id, // FIX: Added 'id' to the constructor.
+    required this.id, // Made it required
+    required this.date,
     required this.name,
-    this.date,
     required this.exercises,
   });
 }

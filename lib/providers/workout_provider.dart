@@ -1,100 +1,91 @@
-// lib/providers/workout_provider.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Needed for date formatting
+
+// ----- THE FIX: These imports were missing -----
+import '../models/workout_model.dart'; 
 import '../models/exercise_model.dart';
-import '../models/workout_session.dart';
 
 class WorkoutProvider with ChangeNotifier {
-  // DATA
+  // --- DATA ---
+  final List<Workout> _workouts = [
+    Workout(
+      id: 'w1', name: 'Full Body Workout', description: 'A comprehensive workout targeting all major muscle groups.',
+      exercises: [
+        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
+        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
+      ],
+    ),
+    Workout(
+      id: 'w2', name: 'Leg Day', description: 'A workout focused on strengthening your lower body.',
+      exercises: [
+        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 4, reps: 6),
+        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back and Hamstrings', sets: 3, reps: 5),
+      ],
+    ),
+  ];
+
+  Map<String, String> _weeklyPlan = {
+    'Monday': 'Full Body Workout', 'Tuesday': 'Rest', 'Wednesday': 'Leg Day',
+    'Thursday': 'Rest', 'Friday': 'Full Body Workout', 'Saturday': 'Rest', 'Sunday': 'Rest',
+  };
+
+  Map<DateTime, double> _weightHistory = {
+    DateTime.now().subtract(const Duration(days: 7)): 75.0,
+    DateTime.now().subtract(const Duration(days: 3)): 74.5,
+    DateTime.now(): 74.8,
+  };
+
   DateTime _selectedDate = DateTime.now();
 
-  final Map<DateTime, double> _weightHistory = {
-    DateTime.now().subtract(const Duration(days: 10)): 78.5,
-    DateTime.now().subtract(const Duration(days: 7)): 78.0,
-    DateTime.now().subtract(const Duration(days: 1)): 77.2,
-  };
+  // --- GETTERS AND METHODS ---
 
-  // FIX: Added 'muscleGroup' to every Exercise
-  final List<Exercise> _masterExerciseList = [
-    Exercise(id: 'ex01', name: 'Push-ups', muscleGroup: 'Chest'),
-    Exercise(id: 'ex02', name: 'Squats', muscleGroup: 'Legs'),
-    Exercise(id: 'ex03', name: 'Pull-ups', muscleGroup: 'Back'),
-    Exercise(id: 'ex04', name: 'Plank', muscleGroup: 'Core'),
-    Exercise(id: 'ex05', name: 'Lunges', muscleGroup: 'Legs'),
-    Exercise(id: 'ex06', name: 'Bench Press', muscleGroup: 'Chest'),
-    Exercise(id: 'ex07', name: 'Deadlift', muscleGroup: 'Back'),
-  ];
-
-  Map<int, String?> _weeklyPlan = {
-    0: 'wk01', 1: null, 2: 'wk02', 3: null, 4: 'wk03', 5: null, 6: null,
-  };
-
-  // FIX: Added 'muscleGroup' to every Exercise within each WorkoutSession
-  final List<WorkoutSession> _masterWorkoutList = [
-    WorkoutSession(
-      id: 'wk01',
-      name: 'Upper Body Focus',
-      exercises: [
-        Exercise(id: 'ex01', name: 'Push-ups', muscleGroup: 'Chest'),
-        Exercise(id: 'ex03', name: 'Pull-ups', muscleGroup: 'Back'),
-        Exercise(id: 'ex06', name: 'Bench Press', muscleGroup: 'Chest'),
-      ],
-    ),
-    WorkoutSession(
-      id: 'wk02',
-      name: 'Lower Body Strength',
-      exercises: [
-        Exercise(id: 'ex02', name: 'Squats', muscleGroup: 'Legs'),
-        Exercise(id: 'ex05', name: 'Lunges', muscleGroup: 'Legs'),
-        Exercise(id: 'ex07', name: 'Deadlift', muscleGroup: 'Back'),
-      ],
-    ),
-    WorkoutSession(
-      id: 'wk03',
-      name: 'Full Body Core',
-      exercises: [
-        Exercise(id: 'ex01', name: 'Push-ups', muscleGroup: 'Chest'),
-        Exercise(id: 'ex02', name: 'Squats', muscleGroup: 'Legs'),
-        Exercise(id: 'ex04', name: 'Plank', muscleGroup: 'Core'),
-      ],
-    ),
-  ];
-
-  // GETTERS
+  List<Workout> get workouts => [..._workouts];
+  Map<String, String> get weeklyPlan => {..._weeklyPlan};
+  Map<DateTime, double> get weightHistory => {..._weightHistory};
   DateTime get selectedDate => _selectedDate;
-  Map<DateTime, double> get weightHistory => _weightHistory;
-  List<Exercise> get masterExerciseList => _masterExerciseList;
-  Map<int, String?> get weeklyPlan => _weeklyPlan;
-  List<WorkoutSession> get masterWorkoutList => _masterWorkoutList;
 
-  WorkoutSession? get selectedWorkout {
-    final dayOfWeek = _selectedDate.weekday - 1;
-    final workoutId = _weeklyPlan[dayOfWeek];
-    if (workoutId == null) return null;
-    return _masterWorkoutList.firstWhere((w) => w.id == workoutId);
-  }
-
-  // METHODS
-  void changeSelectedDate(DateTime newDate) {
-    _selectedDate = newDate;
-    notifyListeners();
-  }
-
-  void toggleExerciseCompletion(String exerciseId) {
-    final workout = selectedWorkout;
-    if (workout != null) {
-      final exercise = workout.exercises.firstWhere((ex) => ex.id == exerciseId);
-      exercise.isCompleted = !exercise.isCompleted;
-      notifyListeners();
+  // This getter fixes the final error for the home screen
+  Workout? get selectedWorkout {
+    final dayOfWeek = DateFormat('EEEE').format(_selectedDate);
+    final workoutName = _weeklyPlan[dayOfWeek];
+    if (workoutName == null || workoutName == 'Rest') {
+      return null;
     }
+    return _workouts.firstWhere((w) => w.name == workoutName);
   }
 
-  void addExerciseToMasterList(Exercise newExercise) {
-    _masterExerciseList.add(newExercise);
+  double get latestWeight {
+    if (_weightHistory.isEmpty) return 0.0;
+    return _weightHistory.entries.last.value;
+  }
+
+  List<Exercise> get allExercises {
+    return _workouts.expand((workout) => workout.exercises).toList();
+  }
+  
+  void logUserWeight(double weight) {
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    _weightHistory[today] = weight;
     notifyListeners();
   }
 
-  void updateWeeklyPlan(int dayIndex, String? workoutId) {
-    _weeklyPlan[dayIndex] = workoutId;
+  void changeSelectedDate(DateTime date) {
+    _selectedDate = date;
+    notifyListeners();
+  }
+
+  void updateWeeklyPlan(String day, String workoutName) {
+    _weeklyPlan[day] = workoutName;
+    notifyListeners();
+  }
+
+  Workout findById(String id) {
+    return _workouts.firstWhere((workout) => workout.id == id);
+  }
+
+  void addWorkout(Workout workout) {
+    _workouts.add(workout);
     notifyListeners();
   }
 }

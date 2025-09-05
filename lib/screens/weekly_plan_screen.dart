@@ -1,94 +1,99 @@
 // lib/screens/weekly_plan_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/workout_provider.dart';
-import '../models/workout_session.dart';
+import 'package:fitlyf/providers/workout_provider.dart';
+import 'package:fitlyf/widgets/frosted_glass_card.dart';
 
 class WeeklyPlanScreen extends StatelessWidget {
+  const WeeklyPlanScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<WorkoutProvider>(context);
-    final weeklyPlan = provider.weeklyPlan;
-    // We need the master workout list to get names from IDs
-    final masterWorkoutList = provider.masterWorkoutList;
+    // Access the provider to get and update workout plans
+    final workoutProvider = Provider.of<WorkoutProvider>(context);
+    final weeklyPlan = workoutProvider.weeklyPlan;
 
-    final daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-    // Create a list of workout names for the dropdown dialog
-    final workoutList = masterWorkoutList.map((workout) {
-      return {'id': workout.id, 'name': workout.name};
-    }).toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Edit Weekly Plan'),
-        backgroundColor: Colors.grey[900],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      body: ListView.builder(
-        itemCount: daysOfWeek.length,
-        itemBuilder: (context, index) {
-          final day = daysOfWeek[index];
-          final workoutId = weeklyPlan[index];
-          final workoutName = workoutId == null
-              ? 'Rest Day'
-              : masterWorkoutList.firstWhere((w) => w.id == workoutId).name;
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('Your Weekly Plan', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: ListView.builder(
+          padding: const EdgeInsets.all(20.0),
+          itemCount: weeklyPlan.length,
+          itemBuilder: (context, index) {
+            String day = weeklyPlan.keys.elementAt(index);
+            String muscleGroup = weeklyPlan[day]!;
 
-          return Card(
-            color: Colors.grey[850],
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(day, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: Text(workoutName, style: TextStyle(color: Colors.grey[400])),
-              trailing: Icon(Icons.edit, color: Colors.blueAccent),
-              onTap: () {
-                _showEditDialog(context, provider, index, workoutList);
-              },
-            ),
-          );
-        },
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 15.0),
+              child: FrostedGlassCard(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Text(
+                    day,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  trailing: Text(
+                    muscleGroup,
+                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                  ),
+                  onTap: () {
+                    // This will open a dialog to edit the muscle group
+                    _showEditDialog(context, workoutProvider, day);
+                  },
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  void _showEditDialog(BuildContext context, WorkoutProvider provider, int dayIndex, List<Map<String, String>> workoutList) {
-    String? currentSelection = provider.weeklyPlan[dayIndex];
+  // A dialog box to edit the workout for a specific day
+  void _showEditDialog(BuildContext context, WorkoutProvider provider, String day) {
+    final TextEditingController controller = TextEditingController(text: provider.weeklyPlan[day]);
 
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.grey[800],
-          title: Text('Select Workout for ${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex]}', style: TextStyle(color: Colors.white)),
-          content: DropdownButton<String?>(
-            value: currentSelection,
-            isExpanded: true,
-            dropdownColor: Colors.grey[700],
-            style: TextStyle(color: Colors.white),
-            onChanged: (String? newValue) {
-                provider.updateWeeklyPlan(dayIndex, newValue);
-                Navigator.of(context).pop();
-            },
-            items: [
-              // Add the "Rest Day" option
-              DropdownMenuItem<String?>(
-                value: null,
-                child: Text('Rest Day'),
-              ),
-              // Add the other workouts
-              ...workoutList.map<DropdownMenuItem<String?>>((Map<String, String> workout) {
-                return DropdownMenuItem<String?>(
-                  value: workout['id'],
-                  child: Text(workout['name']!),
-                );
-              }).toList(),
-            ],
+          backgroundColor: const Color(0xFF3E246E),
+          title: Text('Update Plan for $day', style: const TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: "e.g., Legs & Back",
+              hintStyle: TextStyle(color: Colors.white54),
+            ),
           ),
-          actions: <Widget>[
+          actions: [
             TextButton(
-              child: Text('Cancel', style: TextStyle(color: Colors.blueAccent)),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            ),
+            TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                if (controller.text.isNotEmpty) {
+                  provider.updateWeeklyPlan(day, controller.text);
+                  Navigator.pop(context);
+                }
               },
+              child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -96,4 +101,3 @@ class WeeklyPlanScreen extends StatelessWidget {
     );
   }
 }
-

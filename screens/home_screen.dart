@@ -5,10 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
-// Note: I did not have this file in my folder so this might give error - I am assuming there is an 'add_exercise_screen.dart' file
-// import 'package:fitlyf/screens/add_exercise_screen.dart'; 
+import 'package:fitlyf/screens/add_exercise_screen.dart';
 import 'package:intl/intl.dart';
-// MISSING IMPORT ADDED HERE
 import 'package:fitlyf/models/workout_session.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -49,9 +47,39 @@ class HomeScreen extends StatelessWidget {
                 _buildWorkoutCard(context, workout),
                 const SizedBox(height: 20),
                 _buildWeightTrackerCard(context, workoutProvider),
+                const SizedBox(height: 20), // Added space
+                // --- NEW "CREATE EXERCISE" BUTTON ADDED HERE ---
+                _buildCreateExerciseButton(context),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+  
+  // --- THIS ENTIRE WIDGET IS NEW ---
+  Widget _buildCreateExerciseButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddExerciseScreen()),
+        );
+      },
+      child: FrostedGlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        child: const Row(
+          children: [
+            Icon(Icons.add_circle_outline, color: Colors.white, size: 28),
+            SizedBox(width: 15),
+            Text(
+              "Create Your Own Exercise",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Spacer(),
+            Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+          ],
         ),
       ),
     );
