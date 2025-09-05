@@ -5,7 +5,6 @@ import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/models/workout_session.dart';
 
 class WorkoutProvider with ChangeNotifier {
-  // --- ADDED THIS BACK IN ---
   final Map<DateTime, double> _weightHistory = {
     DateTime.now().subtract(const Duration(days: 30)): 75.0,
     DateTime.now().subtract(const Duration(days: 20)): 74.5,
@@ -25,21 +24,21 @@ class WorkoutProvider with ChangeNotifier {
 
   final List<WorkoutSession> _allWorkouts = [
     WorkoutSession(
-      id: 'ws1', // Added ID
+      id: 'ws1',
       date: DateUtils.dateOnly(DateTime.now()),
       name: 'Chest, Shoulders, Core',
       exercises: [
-        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', weight: 45),
-        Exercise(id: 'ex2', name: 'Barbell Push Press', weight: 30),
+        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press'),
+        Exercise(id: 'ex2', name: 'Barbell Push Press'),
       ],
     ),
     WorkoutSession(
-      id: 'ws2', // Added ID
+      id: 'ws2',
       date: DateUtils.dateOnly(DateTime.now().add(const Duration(days: 1))),
       name: 'Legs & Back',
       exercises: [
-        Exercise(id: 'ex3', name: 'Squats', weight: 80),
-        Exercise(id: 'ex4', name: 'Deadlifts', weight: 100),
+        Exercise(id: 'ex3', name: 'Squats'),
+        Exercise(id: 'ex4', name: 'Deadlifts'),
       ],
     ),
   ];
@@ -51,23 +50,21 @@ class WorkoutProvider with ChangeNotifier {
     _loadWorkoutForDate(_selectedDate);
   }
 
-  // --- GETTERS ---
   DateTime get selectedDate => _selectedDate;
   WorkoutSession get selectedWorkout => _selectedWorkout;
   Map<String, String> get weeklyPlan => _weeklyPlan;
-  Map<DateTime, double> get weightHistory => _weightHistory; // Added getter
+  Map<DateTime, double> get weightHistory => _weightHistory;
+  double get latestWeight => _weightHistory.entries.last.value;
 
-  // New getter to replace 'masterExerciseList'
   List<Exercise> get allExercises {
     return _allWorkouts.expand((session) => session.exercises).toList();
   }
 
-  // --- METHODS ---
   void _loadWorkoutForDate(DateTime date) {
     _selectedWorkout = _allWorkouts.firstWhere(
       (session) => DateUtils.isSameDay(session.date, date),
       orElse: () => WorkoutSession(
-        id: DateTime.now().toIso8601String(), // Added ID
+        id: DateTime.now().toIso801String(),
         date: date,
         name: 'Rest Day',
         exercises: [],
@@ -94,6 +91,13 @@ class WorkoutProvider with ChangeNotifier {
   void toggleExerciseCompletion(String exerciseId) {
     final exercise = _selectedWorkout.exercises.firstWhere((ex) => ex.id == exerciseId);
     exercise.isCompleted = !exercise.isCompleted;
+    notifyListeners();
+  }
+
+  // --- NEW METHOD TO LOG WEIGHT ---
+  void logUserWeight(double newWeight) {
+    // Adds a new entry for today's date. If an entry for today already exists, it's updated.
+    _weightHistory[DateUtils.dateOnly(DateTime.now())] = newWeight;
     notifyListeners();
   }
 }
