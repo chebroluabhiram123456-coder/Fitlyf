@@ -2,12 +2,16 @@ class Exercise {
   final String id;
   final String name;
   final String targetMuscle;
-  bool isCompleted; // This property is needed for the progress screen
+  final int sets; // Added this
+  final int reps; // Added this
+  bool isCompleted;
 
   Exercise({
     required this.id,
     required this.name,
     required this.targetMuscle,
-    this.isCompleted = false, // Default to false
+    required this.sets, // Added this
+    required this.reps, // Added this
+    this.isCompleted = false,
   });
 }
