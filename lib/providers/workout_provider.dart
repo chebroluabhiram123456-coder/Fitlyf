@@ -1,102 +1,57 @@
-// lib/providers/workout_provider.dart
-
-import 'package:flutter/material.dart';
-import 'package:fitlyf/models/exercise_model.dart';
-import 'package:fitlyf/models/workout_session.dart';
+import 'package:flutter/foundation.dart';
+import '../models/workout_model.dart';
+import '../models/exercise_model.dart';
 
 class WorkoutProvider with ChangeNotifier {
-  final Map<DateTime, double> _weightHistory = {
-    DateTime.now().subtract(const Duration(days: 30)): 75.0,
-    DateTime.now().subtract(const Duration(days: 20)): 74.5,
-    DateTime.now().subtract(const Duration(days: 10)): 74.0,
-    DateTime.now(): 73.5,
-  };
-  
-  final Map<String, String> _weeklyPlan = {
-    'Monday': 'Chest, Shoulders, Core',
-    'Tuesday': 'Legs & Back',
-    'Wednesday': 'Arms',
-    'Thursday': 'Chest & Shoulders',
-    'Friday': 'Legs',
-    'Saturday': 'Cardio & Abs',
-    'Sunday': 'Rest Day',
-  };
-
-  final List<WorkoutSession> _allWorkouts = [
-    WorkoutSession(
-      id: 'ws1',
-      date: DateUtils.dateOnly(DateTime.now()),
-      name: 'Chest, Shoulders, Core',
+  final List<Workout> _workouts = [
+    Workout(
+      id: 'w1',
+      name: 'Full Body Workout',
+      description: 'A comprehensive workout targeting all major muscle groups.',
       exercises: [
-        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press'),
-        Exercise(id: 'ex2', name: 'Barbell Push Press'),
+        // FIXES APPLIED BELOW
+        Exercise(
+          id: 'ex1',
+          name: 'Barbell Incline Bench Press',
+          targetMuscle: 'Chest', // Added this line
+        ),
+        Exercise(
+          id: 'ex2',
+          name: 'Barbell Push Press',
+          targetMuscle: 'Shoulders', // Added this line
+        ),
       ],
     ),
-    WorkoutSession(
-      id: 'ws2',
-      date: DateUtils.dateOnly(DateTime.now().add(const Duration(days: 1))),
-      name: 'Legs & Back',
+    Workout(
+      id: 'w2',
+      name: 'Leg Day',
+      description: 'A workout focused on strengthening your lower body.',
       exercises: [
-        Exercise(id: 'ex3', name: 'Squats'),
-        Exercise(id: 'ex4', name: 'Deadlifts'),
+        // FIXES APPLIED BELOW
+        Exercise(
+          id: 'ex3',
+          name: 'Squats',
+          targetMuscle: 'Legs', // Added this line
+        ),
+        Exercise(
+          id: 'ex4',
+          name: 'Deadlifts',
+          targetMuscle: 'Back and Hamstrings', // Added this line
+        ),
       ],
     ),
   ];
 
-  DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
-  late WorkoutSession _selectedWorkout;
-
-  WorkoutProvider() {
-    _loadWorkoutForDate(_selectedDate);
+  List<Workout> get workouts {
+    return [..._workouts];
   }
 
-  DateTime get selectedDate => _selectedDate;
-  WorkoutSession get selectedWorkout => _selectedWorkout;
-  Map<String, String> get weeklyPlan => _weeklyPlan;
-  Map<DateTime, double> get weightHistory => _weightHistory;
-  double get latestWeight => _weightHistory.entries.last.value;
-
-  List<Exercise> get allExercises {
-    return _allWorkouts.expand((session) => session.exercises).toList();
+  Workout findById(String id) {
+    return _workouts.firstWhere((workout) => workout.id == id);
   }
 
-  void _loadWorkoutForDate(DateTime date) {
-    _selectedWorkout = _allWorkouts.firstWhere(
-      (session) => DateUtils.isSameDay(session.date, date),
-      orElse: () => WorkoutSession(
-        // TYPO FIX: Changed toIso801String to toIso8601String
-        id: DateTime.now().toIso8601String(),
-        date: date,
-        name: 'Rest Day',
-        exercises: [],
-      ),
-    );
-  }
-
-  void changeSelectedDate(DateTime newDate) {
-    _selectedDate = newDate;
-    _loadWorkoutForDate(newDate);
-    notifyListeners();
-  }
-  
-  void updateWeeklyPlan(String day, String muscleGroup) {
-      _weeklyPlan[day] = muscleGroup;
-      notifyListeners();
-  }
-
-  void addExercise(Exercise exercise) {
-    _selectedWorkout.exercises.add(exercise);
-    notifyListeners();
-  }
-
-  void toggleExerciseCompletion(String exerciseId) {
-    final exercise = _selectedWorkout.exercises.firstWhere((ex) => ex.id == exerciseId);
-    exercise.isCompleted = !exercise.isCompleted;
-    notifyListeners();
-  }
-
-  void logUserWeight(double newWeight) {
-    _weightHistory[DateUtils.dateOnly(DateTime.now())] = newWeight;
+  void addWorkout(Workout workout) {
+    _workouts.add(workout);
     notifyListeners();
   }
 }
