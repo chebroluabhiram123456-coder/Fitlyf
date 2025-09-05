@@ -2,10 +2,11 @@
 workflows:
   android-build:
     name: Android Build
-    instance_type: linux_x2  # This selects a Linux machine, which is required for Android builds.
+    # THIS IS THE FIX: We are now using the free Mac Mini machine.
+    instance_type: mac_mini_m1
     environment:
-      flutter: 3.22.2        # The Flutter version you're using.
-      java: 17             # **THE FIX**: This explicitly sets the Java version to 17.
+      flutter: stable # Using stable is often better than a fixed version
+      java: 17        # We still need Java 17, even on a Mac, for Android builds.
     scripts:
       - flutter packages pub get
       - flutter analyze
