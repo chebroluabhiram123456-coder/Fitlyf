@@ -1,98 +1,74 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/screens/home_screen.dart';
 import 'package:fitlyf/screens/progress_screen.dart';
-import 'package:fitlyf/screens/weekly_plan_screen.dart'; // Import the new screen
+import 'package:fitlyf/screens/weekly_plan_screen.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => WorkoutProvider(),
-      child: const FitlyfApp(),
-    ),
-  );
+  runApp(MyApp());
 }
 
-class FitlyfApp extends StatelessWidget {
-  const FitlyfApp({super.key});
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Fitlyf',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF2D1458),
-        textTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme).apply(
-          bodyColor: Colors.white,
-          displayColor: Colors.white,
+    return ChangeNotifierProvider(
+      create: (ctx) => WorkoutProvider(),
+      child: MaterialApp(
+        title: 'FitLfy',
+        theme: ThemeData(
+          primarySwatch: Colors.deepPurple,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
+        home: MainScreen(),
       ),
-      home: const MainNavigator(),
     );
   }
 }
 
-class MainNavigator extends StatefulWidget {
-  const MainNavigator({super.key});
-
+class MainScreen extends StatefulWidget {
   @override
-  State<MainNavigator> createState() => _MainNavigatorState();
+  _MainScreenState createState() => _MainScreenState();
 }
 
-class _MainNavigatorState extends State<MainNavigator> {
-  int _currentIndex = 0;
-  
-  // Add the new screen to the list of screens
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const ProgressScreen(),
-    const WeeklyPlanScreen(), // New screen added here
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+  static List<Widget> _widgetOptions = <Widget>[
+    HomeScreen(), // THE FIX: Removed 'const' from here
+    ProgressScreen(),
+    WeeklyPlanScreen(),
   ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: Center(
+        child: _widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        backgroundColor: const Color(0xFF3E246E).withOpacity(0.8),
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white54,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-        items: const [
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Workout',
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Analytics',
+            icon: Icon(Icons.show_chart),
+            label: 'Progress',
           ),
-          // New navigation item for the Plan screen
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
+            icon: Icon(Icons.calendar_today),
             label: 'Plan',
           ),
         ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }
 }
-
