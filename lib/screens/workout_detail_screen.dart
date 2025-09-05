@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:fitlyf/models/workout_model.dart'; // THE FIX: Changed the import
+import 'package:fitlyf/models/workout_model.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 
-// THE FIX: The screen now accepts a 'Workout' object
 class WorkoutDetailScreen extends StatelessWidget {
   final Workout workout;
 
-  WorkoutDetailScreen({required this.workout});
+  const WorkoutDetailScreen({required this.workout, Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -15,29 +14,36 @@ class WorkoutDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(workout.name),
       ),
-      body: ListView.builder(
-        itemCount: workout.exercises.length,
-        itemBuilder: (ctx, index) {
-          final exercise = workout.exercises[index];
-          return Card(
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              leading: Checkbox(
-                value: exercise.isCompleted,
-                onChanged: (bool? value) {
-                  if (value != null) {
-                    Provider.of<WorkoutProvider>(context, listen: false)
-                        .toggleExerciseCompletion(exercise.id, value);
-                  }
-                },
-              ),
-              title: Text(exercise.name),
-              subtitle: Text(
-                  '${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}'),
-              trailing: Icon(Icons.fitness_center),
-            ),
-          );
-        },
+      // THE FIX: Wrapped the body in a Hero widget to match the home screen
+      body: Hero(
+        tag: 'workout_card', // Must use the same tag as the home screen
+        child: Material( // Hero animation requires a Material widget parent
+          type: MaterialType.transparency,
+          child: ListView.builder(
+            itemCount: workout.exercises.length,
+            itemBuilder: (ctx, index) {
+              final exercise = workout.exercises[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: Checkbox(
+                    value: exercise.isCompleted,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        Provider.of<WorkoutProvider>(context, listen: false)
+                            .toggleExerciseCompletion(exercise.id, value);
+                      }
+                    },
+                  ),
+                  title: Text(exercise.name),
+                  subtitle: Text(
+                      '${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}'),
+                  trailing: const Icon(Icons.fitness_center),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
