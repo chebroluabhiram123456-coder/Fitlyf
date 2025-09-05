@@ -1,22 +1,22 @@
-// The plugins block, written in pure Kotlin
+// Import statements to fix the "Unresolved reference" error
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     kotlin("android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// This section reads the version code and name from a local file.
-// It is now written in pure Kotlin.
-val localProperties = java.util.Properties()
+val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localProperties.load(java.io.FileInputStream(localPropertiesFile))
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
 val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
 val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
-// The main Android configuration block, now in pure Kotlin.
 android {
     namespace = "com.example.fitlyf"
     compileSdk = flutter.compileSdkVersion
