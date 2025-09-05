@@ -3,9 +3,10 @@
 class Exercise {
   String id;
   String name;
+  String targetMuscle; // ADDED THIS
+  String description;  // ADDED THIS
   int sets;
   int reps;
-  // The 'weight' property has been completely removed from here
   bool isCompleted;
   String? imagePath;
   String? videoPath;
@@ -13,9 +14,10 @@ class Exercise {
   Exercise({
     required this.id,
     required this.name,
+    required this.targetMuscle, // ADDED THIS
+    required this.description,  // ADDED THIS
     this.sets = 3,
     this.reps = 10,
-    // The 'weight' property has been completely removed from the constructor
     this.isCompleted = false,
     this.imagePath,
     this.videoPath,
