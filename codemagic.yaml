@@ -2,12 +2,13 @@
 workflows:
   android-build:
     name: Android Build
-    # THIS IS THE FIX: We are now using the free Mac Mini machine.
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m1 # Use the free Mac Mini machine
     environment:
-      flutter: stable # Using stable is often better than a fixed version
-      java: 17        # We still need Java 17, even on a Mac, for Android builds.
+      flutter: stable
+      java: 17        # We still declare Java 17 here
     scripts:
+      # THIS IS THE FIX: This command forces the machine to use the Java 17 path.
+      - export JAVA_HOME=$(/usr/libexec/java_home -v 17)
       - flutter packages pub get
       - flutter analyze
       - flutter build appbundle --release
@@ -16,4 +17,4 @@ workflows:
     publishing:
       email:
         recipients:
-          - your.email@example.com # Optional: Add your email to get the build file
+          - your.email@example.com # Optional: Add your email
