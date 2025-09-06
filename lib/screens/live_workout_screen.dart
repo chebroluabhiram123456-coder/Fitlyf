@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
@@ -42,14 +43,28 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen> {
   void _startRestTimer() { setState(() { _isResting = true; _restSecondsRemaining = 60; }); _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) { if (_restSecondsRemaining > 0) { setState(() { _restSecondsRemaining--; }); } else { _finishRest(); } }); }
   void _finishRest() { _restTimer?.cancel(); setState(() { _isResting = false; }); }
   
-  void _logSet(int exerciseIndex, int setIndex) {
+  // THE FIX 1: New function to log all sets for an exercise at once.
+  void _logAllSetsForExercise(int exerciseIndex) {
     final exercise = _exercises[exerciseIndex];
-    final reps = exercise.reps; 
-    final weight = 50.0; // Placeholder
+    final provider = Provider.of<WorkoutProvider>(context, listen: false);
     
-    setState(() { exercise.setsLogged.add(SetLog(reps: reps, weight: weight)); });
-    Provider.of<WorkoutProvider>(context, listen: false).logSet(exercise.id, reps, weight);
-    if(exercise.setsLogged.length < exercise.sets) { _startRestTimer(); }
+    // Create a list of logs for all sets
+    final newLogs = List.generate(exercise.sets, (index) {
+      return SetLog(reps: exercise.reps, weight: 50.0); // Placeholder weight
+    });
+
+    // Update the local state to show completion
+    setState(() {
+      exercise.setsLogged.addAll(newLogs);
+    });
+
+    // Inform the provider to check for personal bests
+    for (var log in newLogs) {
+      provider.logSet(exercise.id, log.reps, log.weight);
+    }
+
+    // Automatically start the rest timer
+    _startRestTimer();
   }
   
   void _nextExercise() {
@@ -73,7 +88,6 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show the rest timer overlay if resting
     if (_isResting) { return _buildRestTimerOverlay(); }
 
     return Container(
@@ -105,82 +119,85 @@ class _LiveWorkoutScreenState extends State<LiveWorkoutScreen> {
     );
   }
 
-  Widget _buildRestTimerOverlay() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("REST", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white70)),
-              Text('$_restSecondsRemaining', style: Theme.of(context).textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 120)),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _finishRest,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458)),
-                child: const Text('Skip Rest'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildExercisePage(Exercise exercise, int exerciseIndex) {
+    final bool isExerciseDone = exercise.setsLogged.length >= exercise.sets;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(exercise.name, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
           const SizedBox(height: 10),
-          Text(exercise.targetMuscle, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white70)),
-          const SizedBox(height: 30),
+          Center(child: Text(exercise.targetMuscle, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white70))),
+          const SizedBox(height: 25),
+
+          if (exercise.imageUrl != null && exercise.imageUrl!.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Image.file(File(exercise.imageUrl!), height: 200, width: double.infinity, fit: BoxFit.cover, errorBuilder: (c, e, s) => _buildMediaPlaceholder()),
+            ),
+            const SizedBox(height: 25),
+          ],
+          
+          if (exercise.description != null && exercise.description!.isNotEmpty) ...[
+            FrostedGlassCard(
+              child: Text(exercise.description!, style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 16)),
+            ),
+            const SizedBox(height: 25),
+          ],
+
+          // THE FIX 2: Replaced the set list with a single card and button.
           FrostedGlassCard(
-            child: Column(
-              children: List.generate(exercise.sets, (setIndex) {
-                bool isSetDone = setIndex < exercise.setsLogged.length;
-                return ListTile(
-                  leading: Icon(isSetDone ? Icons.check_circle : Icons.radio_button_unchecked, color: isSetDone ? Colors.greenAccent : Colors.white70),
-                  title: Text("Set ${setIndex + 1}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: isSetDone 
-                    ? Text("${exercise.setsLogged[setIndex].reps} reps @ ${exercise.setsLogged[setIndex].weight} kg", style: const TextStyle(color: Colors.white70))
-                    : Text("Target: ${exercise.reps} reps", style: const TextStyle(color: Colors.white70)),
-                  trailing: ElevatedButton(
-                    onPressed: isSetDone ? null : () => _logSet(exerciseIndex, setIndex),
-                    style: ElevatedButton.styleFrom(backgroundColor: isSetDone ? Colors.transparent : Colors.white, foregroundColor: const Color(0xFF2D1458)),
-                    child: Text(isSetDone ? "DONE" : "LOG"),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatColumn("Sets", exercise.sets.toString()),
+                      Container(height: 50, width: 1, color: Colors.white24),
+                      _buildStatColumn("Reps", exercise.reps.toString()),
+                    ],
                   ),
-                );
-              }),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: Icon(isExerciseDone ? Icons.check : Icons.done_all),
+                      label: Text(isExerciseDone ? "Completed" : "Mark as Complete"),
+                      onPressed: isExerciseDone ? null : () => _logAllSetsForExercise(exerciseIndex),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        backgroundColor: isExerciseDone ? Colors.greenAccent.withOpacity(0.5) : Colors.white,
+                        foregroundColor: isExerciseDone ? Colors.white : const Color(0xFF2D1458),
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         ],
       ),
     );
   }
-
-  Widget _buildBottomNav() {
-    bool isLastExercise = _currentExerciseIndex == _exercises.length - 1;
-    bool areAllSetsDone = _exercises[_currentExerciseIndex].setsLogged.length >= _exercises[_currentExerciseIndex].sets;
-    
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-      child: ElevatedButton(
-        onPressed: areAllSetsDone ? (isLastExercise ? _finishWorkout : _nextExercise) : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458),
-          disabledBackgroundColor: Colors.white.withOpacity(0.3),
-          padding: const EdgeInsets.symmetric(vertical: 15),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        ),
-        child: Text(isLastExercise ? 'Finish Workout' : 'Next Exercise'),
-      ),
+  
+  Widget _buildStatColumn(String label, String value) {
+    return Column(
+      children: [
+        Text(value, style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(color: Colors.white70)),
+      ],
     );
   }
+
+  // --- All other widgets (_buildRestTimerOverlay, _buildBottomNav, etc.) are unchanged ---
+  Widget _buildMediaPlaceholder() { return Container(height: 200, width: double.infinity, decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), borderRadius: BorderRadius.circular(15)), child: const Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 50))); }
+  Widget _buildRestTimerOverlay() { return Container(decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)], begin: Alignment.topLeft, end: Alignment.bottomRight)), child: Scaffold(backgroundColor: Colors.transparent, body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [ Text("REST", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white70)), Text('$_restSecondsRemaining', style: Theme.of(context).textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 120)), const SizedBox(height: 20), ElevatedButton(onPressed: _finishRest, style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458)), child: const Text('Skip Rest'))])))); }
+  Widget _buildBottomNav() { bool isLastExercise = _currentExerciseIndex == _exercises.length - 1; bool areAllSetsDone = _exercises[_currentExerciseIndex].setsLogged.length >= _exercises[_currentExerciseIndex].sets; return Padding(padding: const EdgeInsets.fromLTRB(20, 10, 20, 30), child: ElevatedButton(onPressed: areAllSetsDone ? (isLastExercise ? _finishWorkout : _nextExercise) : null, style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458), disabledBackgroundColor: Colors.white.withOpacity(0.3), padding: const EdgeInsets.symmetric(vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))), child: Text(isLastExercise ? 'Finish Workout' : 'Next Exercise'))); }
 }
