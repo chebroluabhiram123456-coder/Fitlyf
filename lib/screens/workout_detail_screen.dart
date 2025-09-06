@@ -73,10 +73,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               checkColor: const Color(0xFF2D1458),
                               onChanged: (bool? value) {
                                 if (value != null) {
-                                  // THE FIX: The new, smart logic lives here.
                                   workoutProvider.toggleInProgressExerciseCompletion(exercise.id, value);
-                                  
-                                  // Check if this was the last box to be ticked.
                                   if (workoutProvider.areAllExercisesComplete(_orderedExercises)) {
                                     _finishWorkout(context, workoutProvider);
                                   }
@@ -116,7 +113,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     );
   }
 
-  // THE FIX: Created a helper function for finishing the workout to avoid duplicate code.
   void _finishWorkout(BuildContext context, WorkoutProvider provider) {
     final completedWorkout = Workout(
       id: widget.workout.id,
@@ -138,7 +134,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
-            // THE FIX: The manual button now also calls our new helper function.
             final provider = Provider.of<WorkoutProvider>(context, listen: false);
             provider.markAllExercisesAsComplete(_orderedExercises);
             _finishWorkout(context, provider);
@@ -150,7 +145,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           ),
-          // We can rename this for clarity now
           child: const Text('Finish Workout Now'),
         ),
       ),
