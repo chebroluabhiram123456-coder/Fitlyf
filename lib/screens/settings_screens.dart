@@ -16,7 +16,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill the text field with the current user's name
     _nameController = TextEditingController(
       text: Provider.of<WorkoutProvider>(context, listen: false).userName,
     );
@@ -30,16 +29,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _saveSettings() {
     if (_nameController.text.trim().isEmpty) {
-      // Show an error if the name is empty
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Username cannot be empty."), backgroundColor: Colors.red),
       );
       return;
     }
-    // Update the name in the provider
     Provider.of<WorkoutProvider>(context, listen: false).updateUserName(_nameController.text.trim());
     
-    // Show a success message and go back
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Settings saved!"), backgroundColor: Colors.green),
     );
@@ -75,9 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       controller: _nameController,
                       decoration: InputDecoration(
                         labelText: 'Your Name',
-                        hintText: 'Enter your name',
                         labelStyle: const TextStyle(color: Colors.white70),
-                        hintStyle: const TextStyle(color: Colors.white38),
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.2),
                         border: OutlineInputBorder(
