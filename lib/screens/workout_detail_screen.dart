@@ -26,14 +26,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     super.initState();
     _orderedExercises = List.from(widget.workout.exercises);
   }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
+  
   // ... timer functions are unchanged ...
+  @override void dispose() { _timer?.cancel(); super.dispose(); }
   void _startTimer() { setState(() { _isTimerRunning = true; }); _timer = Timer.periodic(const Duration(seconds: 1), (timer) { setState(() { _seconds++; }); }); }
   void _pauseTimer() { _timer?.cancel(); setState(() { _isTimerRunning = false; }); }
   void _resetTimer() { _timer?.cancel(); setState(() { _seconds = 0; _isTimerRunning = false; }); }
@@ -69,46 +64,17 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                       final exercise = _orderedExercises[index];
                       final latestExerciseState = workoutProvider.allExercises.firstWhere((e) => e.id == exercise.id, orElse: () => exercise);
                       
-                      // THE FIX: Wrap the card in a Hero widget that matches the home screen's tag.
-                      return Hero(
-                        tag: 'workout_card_${widget.workout.id}',
-                        child: Material(
-                          type: MaterialType.transparency,
-                          child: Padding(
-                            key: ValueKey(exercise.id),
-                            padding: const EdgeInsets.only(bottom: 15.0),
-                            child: FrostedGlassCard(
-                              padding: const EdgeInsets.all(5),
-                              child: ListTile(
-                                leading: Checkbox(
-                                  value: latestExerciseState.isCompleted,
-                                  activeColor: Colors.white,
-                                  checkColor: const Color(0xFF2D1458),
-                                  onChanged: (bool? value) {
-                                    if (value != null) {
-                                      workoutProvider.toggleExerciseCompletion(exercise.id, value);
-                                    }
-                                  },
-                                ),
-                                title: Text(exercise.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text(
-                                    '${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}',
-                                    style: const TextStyle(color: Colors.white70)),
-                                trailing: ReorderableDragStartListener(
-                                  index: index,
-                                  child: const Icon(Icons.drag_handle, color: Colors.white70),
-                                ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    // Use our custom FadePageRoute for this nested navigation
-                                    FadePageRoute(
-                                      child: ExerciseDetailScreen(exercise: exercise),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
+                      return Padding(
+                        key: ValueKey(exercise.id),
+                        padding: const EdgeInsets.only(bottom: 15.0),
+                        child: FrostedGlassCard( /* ... list tile is unchanged ... */
+                          padding: const EdgeInsets.all(5),
+                          child: ListTile(
+                            leading: Checkbox(value: latestExerciseState.isCompleted, activeColor: Colors.white, checkColor: const Color(0xFF2D1458), onChanged: (bool? value) { if (value != null) { workoutProvider.toggleExerciseCompletion(exercise.id, value); } },),
+                            title: Text(exercise.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}', style: const TextStyle(color: Colors.white70)),
+                            trailing: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle, color: Colors.white70)),
+                            onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => ExerciseDetailScreen(exercise: exercise))); },
                           ),
                         ),
                       );
@@ -131,7 +97,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     );
   }
 
-  // ... all other helper methods are unchanged ...
   Widget _buildFinishWorkoutButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
@@ -140,8 +105,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         child: ElevatedButton(
           onPressed: () {
             final provider = Provider.of<WorkoutProvider>(context, listen: false);
+            
+            // Mark all exercises as complete for the UI
             provider.markAllExercisesAsComplete(_orderedExercises);
-            provider.markWorkoutAsComplete(provider.selectedDate);
+
+            // THE FIX: Create a final snapshot of the completed workout and log it.
+            final completedWorkout = Workout(
+              id: 'log_${widget.workout.id}_${DateTime.now().millisecondsSinceEpoch}',
+              name: widget.workout.name,
+              exercises: List<Exercise>.from(_orderedExercises.map((ex) => ex..isCompleted = true)),
+            );
+            provider.logWorkout(provider.selectedDate, completedWorkout);
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Workout Complete! Great job!"), backgroundColor: Colors.green),
             );
@@ -159,7 +134,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
       ),
     );
   }
-  Widget _buildTimerCard() {
+
+  Widget _buildTimerCard() { /* Unchanged */
     return Padding(
       padding: const EdgeInsets.fromLTRB(20.0, 0, 20.0, 20.0),
       child: FrostedGlassCard(
