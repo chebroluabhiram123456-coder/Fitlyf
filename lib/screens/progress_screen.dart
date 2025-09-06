@@ -19,8 +19,9 @@ class ProgressScreen extends StatelessWidget {
         final weightHistory = workoutProvider.weightHistory.entries.toList();
         weightHistory.sort((a, b) => a.key.compareTo(b.key));
         
-        // THE FIX: Get today's specific workout to calculate stats.
-        final todaysWorkout = workoutProvider.getTodaysWorkout;
+        // THE FIX: Revert to calculating stats from ALL exercises.
+        final completedExercises = workoutProvider.allExercises.where((ex) => ex.isCompleted).length;
+        final totalExercises = workoutProvider.allExercises.length;
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -44,9 +45,9 @@ class ProgressScreen extends StatelessWidget {
                     child: _buildWeightChartCard(context, weightHistory),
                   ),
                   const SizedBox(height: 30),
-                  
-                  _buildStatsSection(context, todaysWorkout),
-
+                  const Text("Overall Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 20),
+                  _buildStatsCard(context, completedExercises, totalExercises),
                   const SizedBox(height: 30),
                   const Text("Workout Streak", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 20),
@@ -65,26 +66,6 @@ class ProgressScreen extends StatelessWidget {
     );
   }
   
-  // This helper widget now cleanly handles the dynamic stats
-  Widget _buildStatsSection(BuildContext context, Workout? todaysWorkout) {
-    if (todaysWorkout == null) {
-      return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text("Today's Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 20),
-          const FrostedGlassCard(child: Center(child: Padding(padding: EdgeInsets.all(25.0), child: Text("It's a Rest Day!", style: TextStyle(fontSize: 18, color: Colors.white70))))),
-      ]);
-    }
-
-    final completedExercises = todaysWorkout.exercises.where((ex) => ex.isCompleted).length;
-    final totalExercises = todaysWorkout.exercises.length;
-    
-    return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text("Today's Stats: ${todaysWorkout.name}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 20),
-        _buildStatsCard(context, completedExercises, totalExercises),
-    ]);
-  }
-
   // ... All other helper methods are unchanged and correct ...
   Widget _buildStreakCalendar(BuildContext context, WorkoutProvider provider) {
     final today = DateTime.now();
