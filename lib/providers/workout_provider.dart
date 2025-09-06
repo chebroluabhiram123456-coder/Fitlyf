@@ -6,9 +6,7 @@ enum WorkoutStatus { Completed, Skipped, Scheduled, Rest, Future }
 
 class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
-  // THE FIX 1: Add a variable for the user's name with a default value.
   String _userName = "User";
-
   DateTime _selectedDate = DateTime.now();
   Map<DateTime, double> _weightHistory = { /* ... */ };
   final Set<DateTime> _completedWorkoutDates = { /* ... */ };
@@ -18,18 +16,18 @@ class WorkoutProvider with ChangeNotifier {
   final List<String> availableMuscleGroups = [ /* ... */ ];
 
   // --- Getters ---
-  String get userName => _userName; // Getter for the UI to use
+  String get userName => _userName;
   String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
   Map<String, List<String>> get weeklyPlan => _weeklyPlan;
 
-  // ... other getters are unchanged ...
   double get latestWeight {
     if (_weightHistory.isEmpty) return 0.0;
     final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a));
     return _weightHistory[sortedDates.first]!;
   }
+  
   double? get weightForSelectedDate {
     final entry = _weightHistory.entries.firstWhere(
       (entry) => DateUtils.isSameDay(entry.key, _selectedDate),
@@ -37,31 +35,43 @@ class WorkoutProvider with ChangeNotifier {
     );
     return entry.value == -1.0 ? null : entry.value;
   }
+
   Workout? get selectedWorkout {
     final dayOfWeek = _selectedDate.weekday;
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
     final targetMuscles = _weeklyPlan[dayName];
     if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
+    return Workout(id: 'day_${dayName.toLowerCase()}', name: targetMuscles.join(' & '), exercises: exercisesForDay);
+  }
+
+  // THE FIX 1: New getter specifically for the Progress screen stats.
+  Workout? get getTodaysWorkout {
+    final today = DateTime.now();
+    final dayOfWeek = today.weekday;
+    final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
+    final targetMuscles = _weeklyPlan[dayName];
+
+    if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) {
+      return null; // Return null if it's a rest day
+    }
+
+    final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
     return Workout(
-      id: 'day_${dayName.toLowerCase()}',
+      id: 'today_workout',
       name: targetMuscles.join(' & '),
       exercises: exercisesForDay,
     );
   }
+
   List<Exercise> get allExercises {
     return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
   }
 
   // --- Methods ---
   
-  // THE FIX 2: New function to update the username.
-  void updateUserName(String newName) {
-    _userName = newName;
-    notifyListeners(); // This is the key to syncing across the app.
-  }
-
-  // ... all other methods are unchanged ...
+  // ... All other methods are unchanged and correct ...
+  void updateUserName(String newName) { _userName = newName; notifyListeners(); }
   WorkoutStatus getWorkoutStatusForDate(DateTime date) {
     final today = DateUtils.dateOnly(DateTime.now());
     final dateOnly = DateUtils.dateOnly(date);
@@ -87,25 +97,15 @@ class WorkoutProvider with ChangeNotifier {
   }
   void deleteExercise(String exerciseId) {
     _customExercises.removeWhere((ex) => ex.id == exerciseId);
-    for (var workout in _workouts) {
-      workout.exercises.removeWhere((ex) => ex.id == exerciseId);
-    }
+    for (var workout in _workouts) { workout.exercises.removeWhere((ex) => ex.id == exerciseId); }
     notifyListeners();
   }
   void updateExercise(Exercise updatedExercise) {
     int index = _customExercises.indexWhere((ex) => ex.id == updatedExercise.id);
-    if (index != -1) {
-      _customExercises[index] = updatedExercise;
-      notifyListeners();
-      return;
-    }
+    if (index != -1) { _customExercises[index] = updatedExercise; notifyListeners(); return; }
     for (var workout in _workouts) {
       index = workout.exercises.indexWhere((ex) => ex.id == updatedExercise.id);
-      if (index != -1) {
-        workout.exercises[index] = updatedExercise;
-        notifyListeners();
-        return;
-      }
+      if (index != -1) { workout.exercises[index] = updatedExercise; notifyListeners(); return; }
     }
   }
   void addCustomExercise({ required String name, required String targetMuscle, required int sets, required int reps, String? imageUrl, String? videoUrl }) {
