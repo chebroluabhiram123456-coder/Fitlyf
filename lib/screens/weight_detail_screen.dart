@@ -1,4 +1,3 @@
-// THE FIX: Added the missing import for the Provider package.
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
@@ -116,8 +115,9 @@ class WeightDetailScreen extends StatelessWidget {
   }
 
   LineChartData _buildChartData(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
-    List<FlSpot> spots = weightHistory.asMap().entries.map((entry) {
-      return FlSpot(entry.key.millisecondsSinceEpoch.toDouble(), entry.value.value);
+    // THE FIX: This now correctly maps the DateTime to the x-axis.
+    List<FlSpot> spots = weightHistory.map((entry) {
+      return FlSpot(entry.key.millisecondsSinceEpoch.toDouble(), entry.value);
     }).toList();
 
     return LineChartData(
