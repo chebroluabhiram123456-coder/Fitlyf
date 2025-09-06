@@ -1,7 +1,9 @@
-import 'package.flutter/material.dart';
+// THE FIX 1: Added the missing import for Material, which includes DateUtils.
+import 'package:flutter/material.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
 
+// THE FIX 2: Added 'with ChangeNotifier' to give the class its powers.
 class WorkoutProvider with ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
   Map<DateTime, double> _weightHistory = {
@@ -31,7 +33,6 @@ class WorkoutProvider with ChangeNotifier {
   
   final List<Exercise> _customExercises = [];
 
-  // THE FIX 1: The weekly plan now stores a LIST of muscle groups for each day.
   Map<String, List<String>> _weeklyPlan = {
     'Monday': ['Chest', 'Biceps'],
     'Tuesday': ['Back', 'Triceps'],
@@ -65,8 +66,6 @@ class WorkoutProvider with ChangeNotifier {
     return entry.value == -1.0 ? null : entry.value;
   }
 
-  // THE FIX 2: The selectedWorkout getter is now smarter.
-  // It builds a workout by combining exercises from ALL selected muscles for the day.
   Workout? get selectedWorkout {
     final dayOfWeek = _selectedDate.weekday;
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
@@ -76,12 +75,11 @@ class WorkoutProvider with ChangeNotifier {
       return null;
     }
 
-    // Find all exercises that match ANY of the target muscles for the day.
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
 
     return Workout(
       id: 'day_${dayName.toLowerCase()}',
-      name: targetMuscles.join(' & '), // Creates a name like "Chest & Biceps Day"
+      name: targetMuscles.join(' & '),
       exercises: exercisesForDay,
     );
   }
@@ -123,7 +121,6 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  // THE FIX 3: This function now accepts a LIST of muscle groups.
   void updateWeeklyPlan(String day, List<String> muscleGroups) {
     _weeklyPlan[day] = muscleGroups;
     notifyListeners();
