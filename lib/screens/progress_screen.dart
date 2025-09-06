@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:fitlyf/screens/weight_detail_screen.dart';
 import 'package:fitlyf/helpers/fade_route.dart';
 import 'package:fitlyf/screens/workout_history_screen.dart';
-import 'package:fitlyf/models/workout_model.dart'; // <-- THE FIX: Added missing import
+import 'package:fitlyf/models/workout_model.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({Key? key}) : super(key: key);
@@ -18,7 +18,10 @@ class ProgressScreen extends StatelessWidget {
       builder: (context, workoutProvider, child) {
         final weightHistory = workoutProvider.weightHistory.entries.toList();
         weightHistory.sort((a, b) => a.key.compareTo(b.key));
-        final todaysWorkout = workoutProvider.getTodaysWorkout;
+        
+        // THE FIX: Revert to calculating stats from ALL exercises.
+        final completedExercises = workoutProvider.allExercises.where((ex) => ex.isCompleted).length;
+        final totalExercises = workoutProvider.allExercises.length;
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -42,7 +45,10 @@ class ProgressScreen extends StatelessWidget {
                     child: _buildWeightChartCard(context, weightHistory),
                   ),
                   const SizedBox(height: 30),
-                  _buildStatsSection(context, todaysWorkout),
+                  // This section now shows global stats
+                  const Text("Overall Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 20),
+                  _buildStatsCard(context, completedExercises, totalExercises),
                   const SizedBox(height: 30),
                   const Text("Workout Streak", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 20),
@@ -60,24 +66,8 @@ class ProgressScreen extends StatelessWidget {
       },
     );
   }
-
+  
   // ... All other helper methods are unchanged and correct ...
-  Widget _buildStatsSection(BuildContext context, Workout? todaysWorkout) {
-    if (todaysWorkout == null) {
-      return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text("Today's Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 20),
-          const FrostedGlassCard(child: Center(child: Padding(padding: EdgeInsets.all(25.0), child: Text("It's a Rest Day!", style: TextStyle(fontSize: 18, color: Colors.white70))))),
-      ]);
-    }
-    final completedExercises = todaysWorkout.exercises.where((ex) => ex.isCompleted).length;
-    final totalExercises = todaysWorkout.exercises.length;
-    return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text("Today's Stats: ${todaysWorkout.name}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 20),
-        _buildStatsCard(context, completedExercises, totalExercises),
-    ]);
-  }
   Widget _buildStreakCalendar(BuildContext context, WorkoutProvider provider) {
     final today = DateTime.now();
     final firstDayOfMonth = DateTime(today.year, today.month, 1);
