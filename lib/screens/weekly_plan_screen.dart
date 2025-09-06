@@ -33,11 +33,8 @@ class WeeklyPlanScreen extends StatelessWidget {
               itemCount: days.length,
               itemBuilder: (context, index) {
                 final day = days[index];
-                final workoutId = weeklyPlan[day] ?? 'Rest';
+                final muscleGroup = weeklyPlan[day] ?? 'Rest';
                 
-                // THE FIX: Call our new function to get the muscle description
-                final workoutDescription = workoutProvider.getMusclesForWorkout(workoutId);
-
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 15.0),
                   child: FrostedGlassCard(
@@ -56,9 +53,9 @@ class WeeklyPlanScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 5),
-                            // Display the new, descriptive text
+                            // Display the selected muscle group
                             Text(
-                              workoutDescription,
+                              muscleGroup,
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.white70,
@@ -85,8 +82,10 @@ class WeeklyPlanScreen extends StatelessWidget {
     );
   }
 
+  // THE FIX: The dialog now shows a list of specific muscle groups.
   void _showEditPlanDialog(BuildContext context, WorkoutProvider provider, String day) {
-    String selectedWorkoutId = provider.weeklyPlan[day] ?? 'Rest';
+    String selectedMuscle = provider.weeklyPlan[day] ?? 'Rest';
+    final availableMuscles = provider.availableMuscleGroups;
 
     showDialog(
       context: context,
@@ -97,21 +96,21 @@ class WeeklyPlanScreen extends StatelessWidget {
               backgroundColor: const Color(0xFF3E246E),
               title: Text('Edit Plan for $day', style: const TextStyle(color: Colors.white)),
               content: DropdownButton<String>(
-                value: selectedWorkoutId,
+                value: selectedMuscle,
                 isExpanded: true,
                 dropdownColor: const Color(0xFF3E246E),
                 style: const TextStyle(color: Colors.white, fontSize: 16),
-                // The options in the dialog are still the workout groups, which is correct
-                items: const [
-                  DropdownMenuItem(value: 'w1', child: Text('Full Body A')),
-                  DropdownMenuItem(value: 'w2', child: Text('Full Body B')),
-                  DropdownMenuItem(value: 'Cardio', child: Text('Cardio')),
-                  DropdownMenuItem(value: 'Rest', child: Text('Rest')),
-                ],
+                // Build the list of items from the provider
+                items: availableMuscles.map((String muscle) {
+                  return DropdownMenuItem<String>(
+                    value: muscle,
+                    child: Text(muscle),
+                  );
+                }).toList(),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
                     setDialogState(() {
-                      selectedWorkoutId = newValue;
+                      selectedMuscle = newValue;
                     });
                   }
                 },
@@ -123,8 +122,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    // This function call is what syncs the change to the home screen
-                    provider.updateWeeklyPlan(day, selectedWorkoutId);
+                    provider.updateWeeklyPlan(day, selectedMuscle);
                     Navigator.pop(context);
                   },
                   child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
