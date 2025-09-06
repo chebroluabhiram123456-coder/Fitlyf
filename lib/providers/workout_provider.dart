@@ -55,7 +55,6 @@ class WorkoutProvider with ChangeNotifier {
   double? get weightForSelectedDate {
     final entry = _weightHistory.entries.firstWhere(
       (entry) => DateUtils.isSameDay(entry.key, _selectedDate),
-      // THE FIX: Replaced 'null' with a valid dummy DateTime object.
       orElse: () => MapEntry(DateTime(0), -1.0),
     );
     return entry.value == -1.0 ? null : entry.value;
@@ -83,7 +82,8 @@ class WorkoutProvider with ChangeNotifier {
     required int reps,
   }) {
     final newExercise = Exercise(
-      id: 'custom_${DateTime.now().toIso86-01String()}',
+      // THE FIX: Corrected the typo in the function name.
+      id: 'custom_${DateTime.now().toIso8601String()}',
       name: name,
       targetMuscle: targetMuscle,
       sets: sets,
