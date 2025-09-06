@@ -1,5 +1,4 @@
-  import 'dart:async';
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:provider/provider.dart';
@@ -18,31 +17,22 @@ class WorkoutDetailScreen extends StatefulWidget {
 }
 
 class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
-  Timer? _timer;
-  int _seconds = 0;
-  bool _isTimerRunning = false;
   late List<Exercise> _orderedExercises;
 
   @override
   void initState() {
     super.initState();
     _orderedExercises = List.from(widget.workout.exercises);
+    // This now calls our new, smarter function
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<WorkoutProvider>(context, listen: false).startWorkoutSession();
     });
   }
-
+  
   @override
   void dispose() {
-    _timer?.cancel();
     super.dispose();
   }
-  
-  // --- Timer functions are unchanged ---
-  void _startTimer() { setState(() { _isTimerRunning = true; }); _timer = Timer.periodic(const Duration(seconds: 1), (timer) { setState(() { _seconds++; }); }); }
-  void _pauseTimer() { _timer?.cancel(); setState(() { _isTimerRunning = false; }); }
-  void _resetTimer() { _timer?.cancel(); setState(() { _seconds = 0; _isTimerRunning = false; }); }
-  String _formatTime() { int minutes = _seconds ~/ 60; int seconds = _seconds % 60; return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'; }
 
   @override
   Widget build(BuildContext context) {
@@ -63,24 +53,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         ),
         body: Column(
           children: [
-            _buildTimerCard(),
-            
-            // THE FIX 1: Add the new, prominent "Start Workout" button card.
-            _buildStartWorkoutCard(context),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-              child: Divider(color: Colors.white24),
-            ),
-            
             Expanded(
               child: Consumer<WorkoutProvider>(
                 builder: (context, workoutProvider, child) {
+                  // THE FIX 1: Check if the workout for this day has already been logged.
+                  final isWorkoutComplete = workoutProvider.workoutLog.containsKey(DateUtils.dateOnly(workoutProvider.selectedDate));
+
                   return ReorderableListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    padding: const EdgeInsets.all(20.0),
                     itemCount: _orderedExercises.length,
                     itemBuilder: (ctx, index) {
                       final exercise = _orderedExercises[index];
+                      
                       return Padding(
                         key: ValueKey(exercise.id),
                         padding: const EdgeInsets.only(bottom: 15.0),
@@ -91,7 +75,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               value: workoutProvider.isExerciseInProgressCompleted(exercise.id),
                               activeColor: Colors.white,
                               checkColor: const Color(0xFF2D1458),
-                              onChanged: (bool? value) {
+                              // THE FIX 2: Disable the checkbox if the workout is already done.
+                              onChanged: isWorkoutComplete ? null : (bool? value) {
                                 if (value != null) {
                                   workoutProvider.toggleInProgressExerciseCompletion(exercise.id, value);
                                   if (workoutProvider.areAllExercisesComplete(_orderedExercises)) {
@@ -126,88 +111,73 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 },
               ),
             ),
-            // THE FIX 2: Rename the old button to clarify its function.
-            _buildQuickLogButton(context),
+            _buildActionButtons(context),
           ],
-        ),
-      ),
-    );
-  }
-
-  // THE FIX 3: This is the new widget for the "Start Workout" button.
-  Widget _buildStartWorkoutCard(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: GestureDetector(
-        onTap: () {
-          final reorderedWorkout = Workout(id: widget.workout.id, name: widget.workout.name, exercises: _orderedExercises);
-          Navigator.push(context, FadePageRoute(child: LiveWorkoutScreen(workout: reorderedWorkout)));
-        },
-        child: FrostedGlassCard(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
-              const SizedBox(width: 10),
-              Text("Start Live Workout", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // THE FIX 4: This button is now clearly for "Quick Logging".
-  Widget _buildQuickLogButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            final provider = Provider.of<WorkoutProvider>(context, listen: false);
-            provider.markAllExercisesAsComplete(_orderedExercises);
-            _finishWorkout(context, provider);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF2D1458),
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          ),
-          child: const Text('Quick Log & Finish'),
         ),
       ),
     );
   }
 
   void _finishWorkout(BuildContext context, WorkoutProvider provider) {
-    final completedWorkout = Workout(id: widget.workout.id, name: widget.workout.name, exercises: _orderedExercises);
-    provider.logWorkout(provider.selectedDate, completedWorkout);
-
+    provider.logWorkout(provider.selectedDate, widget.workout);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Workout Complete! Great job!"), backgroundColor: Colors.green),
     );
     Navigator.of(context).pop();
   }
+  
+  // THE FIX 3: A new helper to decide which buttons to show.
+  Widget _buildActionButtons(BuildContext context) {
+    final provider = Provider.of<WorkoutProvider>(context);
+    final isWorkoutComplete = provider.workoutLog.containsKey(DateUtils.dateOnly(provider.selectedDate));
 
-  Widget _buildTimerCard() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20.0, 0, 20.0, 20.0),
-      child: FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(_formatTime(), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            Row(children: [
-                IconButton(icon: Icon(_isTimerRunning ? Icons.pause_circle_outline : Icons.play_circle_outline), iconSize: 30, onPressed: _isTimerRunning ? _pauseTimer : _startTimer),
-                IconButton(icon: const Icon(Icons.replay), iconSize: 30, onPressed: _resetTimer),
-            ]),
-          ],
+    if (isWorkoutComplete) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+        child: Text(
+          "Workout already logged for this day.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.greenAccent, fontSize: 16),
         ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                final reorderedWorkout = Workout(id: widget.workout.id, name: widget.workout.name, exercises: _orderedExercises);
+                Navigator.push(context, FadePageRoute(child: LiveWorkoutScreen(workout: reorderedWorkout)));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: const Text('Start Live'),
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                provider.markAllExercisesAsComplete(_orderedExercises);
+                _finishWorkout(context, provider);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30), side: BorderSide(color: Colors.white54)),
+              ),
+              child: const Text('Quick Log'),
+            ),
+          ),
+        ],
       ),
     );
   }
