@@ -1,12 +1,14 @@
-import 'dart:io'; // Needed for file operations
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
-import 'package:image_picker/image_picker.dart'; // Import the new package
+import 'package:image_picker/image_picker.dart';
+import 'package:fitlyf/models/exercise_model.dart';
 
 class AddExerciseScreen extends StatefulWidget {
-  const AddExerciseScreen({Key? key}) : super(key: key);
+  final Exercise? exerciseToEdit;
+  const AddExerciseScreen({Key? key, this.exerciseToEdit}) : super(key: key);
 
   @override
   _AddExerciseScreenState createState() => _AddExerciseScreenState();
@@ -19,14 +21,35 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
   final _repsController = TextEditingController();
   String? _selectedMuscleGroup;
   
-  // State variables to hold the selected files
   File? _imageFile;
   File? _videoFile;
   final ImagePicker _picker = ImagePicker();
 
+  bool get _isEditMode => widget.exerciseToEdit != null;
+  // Check if the exercise is a custom one and can be deleted
+  bool get _canDelete => _isEditMode && widget.exerciseToEdit!.id.startsWith('custom_');
+
   final List<String> _muscleGroups = [
     'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Cardio', 'Other'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditMode) {
+      final exercise = widget.exerciseToEdit!;
+      _nameController.text = exercise.name;
+      _setsController.text = exercise.sets.toString();
+      _repsController.text = exercise.reps.toString();
+      _selectedMuscleGroup = exercise.targetMuscle;
+      if (exercise.imageUrl != null) {
+        _imageFile = File(exercise.imageUrl!);
+      }
+      if (exercise.videoUrl != null) {
+        _videoFile = File(exercise.videoUrl!);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -36,41 +59,50 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     super.dispose();
   }
 
-  // Function to pick an image from the gallery
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+      setState(() { _imageFile = File(pickedFile.path); });
     }
   }
 
-  // Function to pick a video from the gallery
   Future<void> _pickVideo() async {
     final XFile? pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _videoFile = File(pickedFile.path);
-      });
+      setState(() { _videoFile = File(pickedFile.path); });
     }
   }
 
   void _saveForm() {
     if (_formKey.currentState!.validate()) {
-      Provider.of<WorkoutProvider>(context, listen: false).addCustomExercise(
-        name: _nameController.text,
-        targetMuscle: _selectedMuscleGroup!,
-        sets: int.parse(_setsController.text),
-        reps: int.parse(_repsController.text),
-        // Pass the file paths to the provider
-        imageUrl: _imageFile?.path,
-        videoUrl: _videoFile?.path,
-      );
+      final provider = Provider.of<WorkoutProvider>(context, listen: false);
+
+      if (_isEditMode) {
+        final updatedExercise = Exercise(
+          id: widget.exerciseToEdit!.id,
+          name: _nameController.text,
+          targetMuscle: _selectedMuscleGroup!,
+          sets: int.parse(_setsController.text),
+          reps: int.parse(_repsController.text),
+          imageUrl: _imageFile?.path,
+          videoUrl: _videoFile?.path,
+          isCompleted: widget.exerciseToEdit!.isCompleted,
+        );
+        provider.updateExercise(updatedExercise);
+      } else {
+        provider.addCustomExercise(
+          name: _nameController.text,
+          targetMuscle: _selectedMuscleGroup!,
+          sets: int.parse(_setsController.text),
+          reps: int.parse(_repsController.text),
+          imageUrl: _imageFile?.path,
+          videoUrl: _videoFile?.path,
+        );
+      }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${_nameController.text} has been created!'),
+          content: Text('${_nameController.text} has been saved!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -79,9 +111,39 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     }
   }
 
+  // Helper function to show the delete confirmation dialog
+  void _showDeleteConfirmation() {
+    final provider = Provider.of<WorkoutProvider>(context, listen: false);
+    final exercise = widget.exerciseToEdit!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF3E246E),
+        title: const Text('Confirm Deletion', style: TextStyle(color: Colors.white)),
+        content: Text('Are you sure you want to delete "${exercise.name}"?', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          TextButton(
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+            onPressed: () {
+              provider.deleteExercise(exercise.id);
+              Navigator.of(ctx).pop(); // Close dialog
+              Navigator.of(context).pop(); // Go back from edit screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${exercise.name} deleted.'), backgroundColor: Colors.red),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // THE FIX: Add the gradient background to match the rest of the app
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -93,9 +155,17 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Create New Exercise'),
+          title: Text(_isEditMode ? 'Edit Exercise' : 'Create New Exercise'),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          // THE FIX: Add a delete button to the app bar if we can delete
+          actions: [
+            if (_canDelete)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                onPressed: _showDeleteConfirmation,
+              ),
+          ],
         ),
         body: Form(
           key: _formKey,
@@ -135,10 +205,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  
-                  // THE FIX: New section for image/video upload
                   _buildMediaPicker(),
-
                   const SizedBox(height: 30),
                   ElevatedButton(
                     onPressed: _saveForm,
@@ -159,7 +226,8 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       ),
     );
   }
-
+  
+  // ... The rest of the helper methods remain unchanged ...
   Widget _buildMediaPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
