@@ -1,180 +1,261 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
-import 'package:fitlyf/models/workout_model.dart'; // We need this
+import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
+import 'package:fitlyf/screens/add_exercise_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:fitlyf/models/workout_model.dart';
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final workoutProvider = Provider.of<WorkoutProvider>(context);
-    final workout = workoutProvider.selectedWorkout; // This is a Workout?
+    final workout = workoutProvider.selectedWorkout;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('FitLfy'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () {
-              // Navigate to settings
-            },
-          ),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Today\'s Workout',
-                  style: Theme.of(context).textTheme.headlineSmall),
-              SizedBox(height: 16),
-              // THE FIX: Check if workout is null before building the card
-              if (workout != null)
-                 _buildWorkoutCard(context, workout) // Pass the Workout object
-              else
-                Center(
-                  child: Text("No workout selected for today."),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCalendarHeader(workoutProvider),
+                const SizedBox(height: 30),
+                const Text(
+                  "Get ready, User",
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-
-              SizedBox(height: 24),
-              _buildWeightTracker(context),
-              SizedBox(height: 24),
-              _buildCalendar(context),
-            ],
+                Text(
+                  "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
+                  style: const TextStyle(fontSize: 18, color: Colors.white70),
+                ),
+                const SizedBox(height: 30),
+                if (workout != null)
+                  _buildWorkoutCard(context, workout)
+                else
+                  _buildRestDayCard(),
+                const SizedBox(height: 20),
+                _buildWeightTrackerCard(context, workoutProvider),
+                const SizedBox(height: 20),
+                _buildCreateExerciseButton(context),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // THE FIX: Change the parameter type from WorkoutSession to Workout
-  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
-    return Card(
-      child: ListTile(
-        title: Text(workout.name),
-        subtitle: Text('${workout.exercises.length} exercises'),
-        trailing: Icon(Icons.arrow_forward_ios),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (ctx) => WorkoutDetailScreen(workout: workout),
-            ),
-          );
-        },
+  Widget _buildRestDayCard() {
+    return const FrostedGlassCard(
+      child: Center(
+        child: Text(
+          "It's a Rest Day! 😌",
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
       ),
     );
   }
 
-  Widget _buildWeightTracker(BuildContext context) {
-    final provider = Provider.of<WorkoutProvider>(context, listen: false);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+  Widget _buildCreateExerciseButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddExerciseScreen()),
+        );
+      },
+      child: FrostedGlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        child: const Row(
           children: [
-            Text('Weight Tracker',
-                style: Theme.of(context).textTheme.titleLarge),
-            SizedBox(height: 8),
+            Icon(Icons.add_circle_outline, color: Colors.white, size: 28),
+            SizedBox(width: 15),
             Text(
-              "${provider.latestWeight} kg",
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(color: Theme.of(context).primaryColor),
+              "Create Your Own Exercise",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
-            SizedBox(height: 8),
-            ElevatedButton(
-              child: Text('Log New Weight'),
-              onPressed: () => _showLogWeightDialog(context),
-            )
+            Spacer(),
+            Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
           ],
         ),
       ),
     );
   }
 
-  void _showLogWeightDialog(BuildContext context) {
-    final weightController = TextEditingController();
-    final provider = Provider.of<WorkoutProvider>(context, listen: false);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Log Your Weight'),
-        content: TextField(
-          controller: weightController,
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: 'Weight (kg)'),
+  Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
+    return GestureDetector(
+      onTap: () => _showLogWeightDialog(context, provider),
+      child: FrostedGlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        child: Row(
+          children: [
+            const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 28),
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Current Weight",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                Text(
+                  "${provider.latestWeight} kg",
+                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+                ),
+              ],
+            ),
+            const Spacer(),
+            const Icon(Icons.add, color: Colors.white, size: 20),
+          ],
         ),
-        actions: [
-          TextButton(child: Text('Cancel'), onPressed: () => Navigator.of(ctx).pop()),
-          ElevatedButton(
-            child: Text('Save'),
-            onPressed: () {
-              final newWeight = double.tryParse(weightController.text);
-              if (newWeight != null) {
-                provider.logUserWeight(newWeight);
-              }
-              Navigator.of(ctx).pop();
-            },
-          )
-        ],
       ),
     );
   }
 
-  Widget _buildCalendar(BuildContext context) {
-    final provider = Provider.of<WorkoutProvider>(context);
-    final today = DateTime.now();
+  void _showLogWeightDialog(BuildContext context, WorkoutProvider provider) {
+    final TextEditingController controller = TextEditingController();
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('This Week', style: Theme.of(context).textTheme.titleLarge),
-        SizedBox(height: 8),
-        Container(
-          height: 80,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 7,
-            itemBuilder: (ctx, index) {
-              final date = today.add(Duration(days: index - today.weekday + 1));
-              final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
-              
-              return GestureDetector(
-                onTap: () {
-                  provider.changeSelectedDate(date);
-                },
-                child: Card(
-                  color: isActive ? Theme.of(context).primaryColor : null,
-                  child: Container(
-                    width: 60,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1],
-                          style: TextStyle(color: isActive ? Colors.white : null),
-                        ),
-                        Text(
-                          date.day.toString(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isActive ? Colors.white : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF3E246E),
+          title: const Text('Log Today\'s Weight', style: TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: "e.g., 73.5",
+              hintStyle: TextStyle(color: Colors.white54),
+              suffixText: "kg",
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            ),
+            TextButton(
+              onPressed: () {
+                final double? newWeight = double.tryParse(controller.text);
+                if (newWeight != null) {
+                  provider.logUserWeight(newWeight);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCalendarHeader(WorkoutProvider provider) {
+    final List<DateTime> dates = List.generate(7, (index) {
+      final now = DateTime.now();
+      return now.subtract(Duration(days: now.weekday - 1)).add(Duration(days: index));
+    });
+    return SizedBox(
+      height: 70,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: dates.length,
+        itemBuilder: (context, index) {
+          final date = dates[index];
+          final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
+          return _dateChip(
+            day: DateFormat('E').format(date),
+            date: DateFormat('d').format(date),
+            isActive: isActive,
+            onTap: () {
+              provider.changeSelectedDate(date);
             },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _dateChip({required String day, required String date, required bool isActive, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 60,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(day, style: TextStyle(color: isActive ? Colors.black : Colors.white70, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(date, style: TextStyle(color: isActive ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
+     return GestureDetector(
+       onTap: () {
+          if (workout.exercises.isNotEmpty) {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
+          }
+       },
+       child: Hero(
+        tag: 'workout_card',
+        child: FrostedGlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                workout.name,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                "${workout.exercises.length} exercises",
+                style: const TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.arrow_forward, color: Colors.white),
+                  ),
+                ],
+              )
+            ],
           ),
         ),
-      ],
-    );
+       ),
+     );
   }
 }
