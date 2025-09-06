@@ -90,17 +90,20 @@ class WorkoutProvider with ChangeNotifier {
   }
 
   // Methods
-  // THE FIX 1: New function to update an existing exercise.
+  // THE FIX 1: New function to delete a custom exercise.
+  void deleteExercise(String exerciseId) {
+    // We only allow deleting exercises from the custom list.
+    _customExercises.removeWhere((ex) => ex.id == exerciseId);
+    notifyListeners();
+  }
+
   void updateExercise(Exercise updatedExercise) {
-    // Find the index of the exercise to update using its unique ID
     int index = _customExercises.indexWhere((ex) => ex.id == updatedExercise.id);
     if (index != -1) {
       _customExercises[index] = updatedExercise;
       notifyListeners();
-      return; // Exit if found in custom exercises
+      return;
     }
-
-    // If not in custom, check the pre-defined workouts
     for (var workout in _workouts) {
       index = workout.exercises.indexWhere((ex) => ex.id == updatedExercise.id);
       if (index != -1) {
