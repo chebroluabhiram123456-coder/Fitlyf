@@ -4,12 +4,13 @@ import '../models/workout_model.dart';
 
 class WorkoutProvider with ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
+  // More sample data to better test the history
   Map<DateTime, double> _weightHistory = {
-    DateTime.now().subtract(Duration(days: 1)): 75.5,
+    DateTime.now().subtract(const Duration(days: 3)): 75.0,
+    DateTime.now().subtract(const Duration(days: 2)): 75.5,
     DateTime.now(): 76.0,
   };
 
-  // Sample data now matches the simplified Workout model
   final List<Workout> _workouts = [
     Workout(
       id: 'w1',
@@ -29,7 +30,6 @@ class WorkoutProvider with ChangeNotifier {
     ),
   ];
 
-  // The weeklyPlan logic is now correctly included
   Map<String, String> _weeklyPlan = {
     'Monday': 'w1',
     'Tuesday': 'Rest',
@@ -43,12 +43,22 @@ class WorkoutProvider with ChangeNotifier {
   // Getters
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
-  Map<String, String> get weeklyPlan => _weeklyPlan; // The missing getter
+  Map<String, String> get weeklyPlan => _weeklyPlan;
 
   double get latestWeight {
     if (_weightHistory.isEmpty) return 0.0;
     final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a));
     return _weightHistory[sortedDates.first]!;
+  }
+
+  // THE FIX 1: New getter to find the weight for the selected date.
+  double? get weightForSelectedDate {
+    // We check if any entry in our history has the same day, month, and year.
+    final entry = _weightHistory.entries.firstWhere(
+      (entry) => DateUtils.isSameDay(entry.key, _selectedDate),
+      orElse: () => const MapEntry(null, -1.0), // Return a dummy entry if not found
+    );
+    return entry.value == -1.0 ? null : entry.value; // Return null if not found
   }
 
   Workout? get selectedWorkout {
@@ -67,7 +77,9 @@ class WorkoutProvider with ChangeNotifier {
 
   // Methods
   void logUserWeight(double weight) {
-    _weightHistory[DateTime.now()] = weight;
+    // Remove any existing entry for today before adding the new one
+    _weightHistory.removeWhere((key, value) => DateUtils.isSameDay(key, _selectedDate));
+    _weightHistory[_selectedDate] = weight;
     notifyListeners();
   }
 
