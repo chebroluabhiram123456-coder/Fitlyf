@@ -14,10 +14,9 @@ class WorkoutDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(workout.name),
       ),
-      // THE FIX: Wrapped the body in a Hero widget to match the home screen
       body: Hero(
-        tag: 'workout_card', // Must use the same tag as the home screen
-        child: Material( // Hero animation requires a Material widget parent
+        tag: 'workout_card',
+        child: Material(
           type: MaterialType.transparency,
           child: ListView.builder(
             itemCount: workout.exercises.length,
