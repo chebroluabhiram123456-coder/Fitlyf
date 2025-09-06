@@ -1,5 +1,4 @@
-// THE FIX: All of these import statements are required.
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
@@ -14,9 +13,8 @@ class ProgressScreen extends StatelessWidget {
     return Consumer<WorkoutProvider>(
       builder: (context, workoutProvider, child) {
         final weightHistory = workoutProvider.weightHistory.entries.toList();
-        // Sort the history by date to ensure the chart is correct
-        weightHistory.sort((a, b) => a.key.compareTo(b.key));
-        
+        weightHistory.sort((a, b) => b.key.compareTo(a.key)); // Sort newest first for the list
+
         final completedExercises = workoutProvider.allExercises.where((ex) => ex.isCompleted).length;
         final totalExercises = workoutProvider.allExercises.length;
 
@@ -46,6 +44,15 @@ class ProgressScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _buildStatsCard(context, completedExercises, totalExercises),
+                  const SizedBox(height: 30),
+
+                  // THE FIX 3: Add the new Weight History section
+                  const Text(
+                    "Weight History",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildWeightHistoryList(context, weightHistory),
                 ],
               ),
             ),
@@ -55,11 +62,55 @@ class ProgressScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWeightChartCard(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
+  // New widget to display the detailed history list
+  Widget _buildWeightHistoryList(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
+    if (weightHistory.isEmpty) {
+      return const FrostedGlassCard(child: Center(child: Text("No weight logged yet.", style: TextStyle(color: Colors.white70))));
+    }
+    
+    return Column(
+      children: weightHistory.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: FrostedGlassCard(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('EEEE').format(entry.key), // e.g., "Monday"
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(
+                      DateFormat('d MMMM yyyy').format(entry.key), // e.g., "6 September 2025"
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  "${entry.value.toStringAsFixed(1)} kg",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                )
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ... All other helper methods and widgets remain the same ...
+  Widget _buildWeightChartCard(BuildContext context, List<MapEntry<DateTime, double>> history) {
+    // Chart needs to be sorted oldest first
+    final sortedHistory = List<MapEntry<DateTime, double>>.from(history)..sort((a,b) => a.key.compareTo(b.key));
+
     return FrostedGlassCard(
       child: AspectRatio(
         aspectRatio: 1.7,
-        child: weightHistory.length < 2 
+        child: sortedHistory.length < 2 
             ? const Center(
                 child: Text(
                   "Log more than one weight entry to see your chart!",
@@ -68,7 +119,7 @@ class ProgressScreen extends StatelessWidget {
                 ),
               )
             : LineChart(
-                _buildChartData(context, weightHistory),
+                _buildChartData(context, sortedHistory),
               ),
       ),
     );
@@ -166,4 +217,4 @@ class ProgressScreen extends StatelessWidget {
       ],
     );
   }
-}
+}       
