@@ -1,4 +1,3 @@
-// THE FIX: Add the missing import for the Material library.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
@@ -46,22 +45,9 @@ class WeeklyPlanScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                day,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              Text(day, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                               const SizedBox(height: 5),
-                              Text(
-                                muscleGroups.join(' & '),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white70,
-                                ),
-                              ),
+                              Text(muscleGroups.join(' & '), style: const TextStyle(fontSize: 16, color: Colors.white70)),
                             ],
                           ),
                         ),
@@ -108,12 +94,8 @@ class WeeklyPlanScreen extends StatelessWidget {
                       onChanged: (bool? value) {
                         setDialogState(() {
                           if (value == true) {
-                            if (muscle == 'Rest') {
-                              selectedMuscles = ['Rest'];
-                            } else {
-                              selectedMuscles.remove('Rest');
-                              selectedMuscles.add(muscle);
-                            }
+                            if (muscle == 'Rest') { selectedMuscles = ['Rest']; }
+                            else { selectedMuscles.remove('Rest'); selectedMuscles.add(muscle); }
                           } else {
                             selectedMuscles.remove(muscle);
                           }
@@ -130,9 +112,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    if (selectedMuscles.isEmpty) {
-                      selectedMuscles.add('Rest');
-                    }
+                    if (selectedMuscles.isEmpty) { selectedMuscles.add('Rest'); }
                     provider.updateWeeklyPlan(day, selectedMuscles);
                     Navigator.pop(context);
                   },
