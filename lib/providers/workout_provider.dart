@@ -8,39 +8,24 @@ class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
   String _userName = "User";
   DateTime _selectedDate = DateTime.now();
-  Map<DateTime, double> _weightHistory = { /* ... */ };
-  Map<DateTime, Workout> _workoutLog = { /* ... */ };
+  final Map<DateTime, double> _weightHistory = { /* ... */ };
+  final Map<DateTime, Workout> _workoutLog = { /* ... */ };
   final List<Exercise> _customExercises = [];
 
-  // THE FIX 1: Restore the pre-defined workouts list.
   final List<Workout> _workouts = [
-    Workout(
-      id: 'w1',
-      name: 'Full Body A',
-      exercises: [
+    Workout( id: 'w1', name: 'Full Body A', exercises: [
         Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
         Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
-      ],
-    ),
-    Workout(
-      id: 'w2',
-      name: 'Full Body B',
-      exercises: [
+    ]),
+    Workout( id: 'w2', name: 'Full Body B', exercises: [
         Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5),
         Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5),
-      ],
-    ),
+    ]),
   ];
   
-  // THE FIX 2: Revert the weekly plan to use simple workout IDs.
   Map<String, String> _weeklyPlan = {
-    'Monday': 'w1',
-    'Tuesday': 'Rest',
-    'Wednesday': 'w2',
-    'Thursday': 'Rest',
-    'Friday': 'w1',
-    'Saturday': 'Cardio',
-    'Sunday': 'Rest',
+    'Monday': 'w1', 'Tuesday': 'Rest', 'Wednesday': 'w2', 'Thursday': 'Rest',
+    'Friday': 'w1', 'Saturday': 'Cardio', 'Sunday': 'Rest',
   };
 
   // --- Getters ---
@@ -48,7 +33,7 @@ class WorkoutProvider with ChangeNotifier {
   String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
-  Map<String, String> get weeklyPlan => _weeklyPlan; // Note: This is now Map<String, String>
+  Map<String, String> get weeklyPlan => _weeklyPlan;
   Map<DateTime, Workout> get workoutLog => _workoutLog;
 
   double get latestWeight {
@@ -65,38 +50,37 @@ class WorkoutProvider with ChangeNotifier {
     return entry.value == -1.0 ? null : entry.value;
   }
 
-  // THE FIX 3: Revert the selected workout logic to the simpler version.
   Workout? get selectedWorkout {
     final dayOfWeek = _selectedDate.weekday;
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
     final workoutId = _weeklyPlan[dayName];
 
-    if (workoutId == null || workoutId == 'Rest' || workoutId == 'Cardio') {
-      return null;
+    if (workoutId == null || workoutId == 'Rest' || workoutId == 'Cardio') return null;
+
+    // THE FIX: Rewrote this to be safer and avoid the 'null' type error.
+    try {
+      return _workouts.firstWhere((w) => w.id == workoutId);
+    } catch (e) {
+      return null; // Return null if no workout with that ID is found
     }
-    // Find the workout from our pre-defined list
-    return _workouts.firstWhere((w) => w.id == workoutId, orElse: () => null);
   }
 
   List<Exercise> get allExercises {
     return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
   }
 
-  // THE FIX 4: Bring back this helper function for the UI.
   String getMusclesForWorkout(String workoutId) {
     if (workoutId == 'Rest' || workoutId == 'Cardio') return workoutId;
     try {
       final workout = _workouts.firstWhere((w) => w.id == workoutId);
       final muscles = workout.exercises.map((ex) => ex.targetMuscle).toSet();
       return muscles.join(' & ');
-    } catch (e) {
-      return "Workout";
-    }
+    } catch (e) { return "Workout"; }
   }
 
   // --- Methods ---
   
-  // ... All other methods are unchanged and correct ...
+  // ... All other methods are correct and unchanged ...
   void updateUserName(String newName) { _userName = newName; notifyListeners(); }
   WorkoutStatus getWorkoutStatusForDate(DateTime date) { final today = DateUtils.dateOnly(DateTime.now()); final dateOnly = DateUtils.dateOnly(date); if (dateOnly.isAfter(today)) return WorkoutStatus.Future; if (_workoutLog.containsKey(dateOnly)) return WorkoutStatus.Completed; final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dateOnly.weekday - 1]; final plan = _weeklyPlan[dayName]; if (plan == null || plan == 'Rest' || plan == 'Cardio') return WorkoutStatus.Rest; return WorkoutStatus.Skipped; }
   void logWorkout(DateTime date, Workout workout) { _workoutLog[DateUtils.dateOnly(date)] = workout; notifyListeners(); }
