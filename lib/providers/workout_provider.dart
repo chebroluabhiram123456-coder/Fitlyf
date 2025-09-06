@@ -13,7 +13,7 @@ class WorkoutProvider with ChangeNotifier {
   final List<Workout> _workouts = [
     Workout(
       id: 'w1',
-      name: 'Full Body Strength A',
+      name: 'Full Body A',
       exercises: [
         Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
         Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
@@ -74,8 +74,22 @@ class WorkoutProvider with ChangeNotifier {
     return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
   }
 
+  // THE FIX: New function to get a description of the muscles trained in a workout.
+  String getMusclesForWorkout(String workoutId) {
+    if (workoutId == 'Rest' || workoutId == 'Cardio') {
+      return workoutId; // Just return "Rest" or "Cardio"
+    }
+    try {
+      final workout = _workouts.firstWhere((w) => w.id == workoutId);
+      // Use a Set to get unique muscle groups
+      final muscles = workout.exercises.map((ex) => ex.targetMuscle).toSet();
+      return muscles.join(' & '); // Joins them like "Chest & Shoulders"
+    } catch (e) {
+      return "Workout not found";
+    }
+  }
+
   // Methods
-  // THE FIX: Update this function to accept image and video URLs
   void addCustomExercise({
     required String name,
     required String targetMuscle,
@@ -90,8 +104,8 @@ class WorkoutProvider with ChangeNotifier {
       targetMuscle: targetMuscle,
       sets: sets,
       reps: reps,
-      imageUrl: imageUrl, // Save the image path
-      videoUrl: videoUrl, // Save the video path
+      imageUrl: imageUrl,
+      videoUrl: videoUrl,
     );
     _customExercises.add(newExercise);
     notifyListeners();
@@ -110,7 +124,7 @@ class WorkoutProvider with ChangeNotifier {
   
   void updateWeeklyPlan(String day, String workoutId) {
     _weeklyPlan[day] = workoutId;
-    notifyListeners();
+    notifyListeners(); // This is the key to syncing with the home screen
   }
 
   void toggleExerciseCompletion(String exerciseId, bool isCompleted) {
