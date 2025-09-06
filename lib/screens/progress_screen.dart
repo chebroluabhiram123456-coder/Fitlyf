@@ -1,4 +1,5 @@
-import 'package.flutter/material.dart';
+// THE FIX: All of these import statements are required.
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
@@ -16,7 +17,6 @@ class ProgressScreen extends StatelessWidget {
         // Sort the history by date to ensure the chart is correct
         weightHistory.sort((a, b) => a.key.compareTo(b.key));
         
-        // Calculate workout stats
         final completedExercises = workoutProvider.allExercises.where((ex) => ex.isCompleted).length;
         final totalExercises = workoutProvider.allExercises.length;
 
@@ -107,7 +107,6 @@ class ProgressScreen extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
     List<FlSpot> spots = weightHistory.asMap().entries.map((entry) {
-      // Use index for x-axis and weight for y-axis
       return FlSpot(entry.key.toDouble(), entry.value.value);
     }).toList();
 
@@ -119,19 +118,19 @@ class ProgressScreen extends StatelessWidget {
         getDrawingVerticalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8),
       ),
       titlesData: FlTitlesData(
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 35, interval: 2)),
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: 2, getTitlesWidget: defaultGetTitle)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 30,
-            interval: (spots.length / 4).ceil().toDouble(), // Show around 4 labels
+            interval: (spots.length / 4).ceil().toDouble(),
             getTitlesWidget: (value, meta) {
               int index = value.toInt();
               if (index >= 0 && index < weightHistory.length) {
                 return SideTitleWidget(
                   axisSide: meta.axisSide,
                   space: 8.0,
-                  child: Text(DateFormat('d MMM').format(weightHistory[index].key)),
+                  child: Text(DateFormat('d MMM').format(weightHistory[index].key), style: const TextStyle(fontSize: 12)),
                 );
               }
               return const Text('');
@@ -148,13 +147,20 @@ class ProgressScreen extends StatelessWidget {
         LineChartBarData(
           spots: spots,
           isCurved: true,
-          color: Theme.of(context).primaryColor,
+          color: Colors.white,
           barWidth: 5,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
-            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            gradient: LinearGradient(
+              colors: [
+                Colors.deepPurple.withOpacity(0.5),
+                Colors.deepPurple.withOpacity(0.0),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
         ),
       ],
