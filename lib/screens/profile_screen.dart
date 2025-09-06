@@ -6,8 +6,8 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/exercise_library_screen.dart';
 import 'package:fitlyf/screens/workout_log_screen.dart';
-import 'package:fitlyf/screens/settings_screen.dart'; // <-- IMPORT THE NEW SCREEN
-import 'package:fitlyf/helpers/fade_route.dart'; // Import for smooth transitions
+import 'package:fitlyf/screens/settings_screen.dart';
+import 'package:fitlyf/helpers/fade_route.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -60,7 +60,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                            Navigator.push(context, FadePageRoute(child: const WorkoutLogScreen()));
                         },
                       ),
-                      // THE FIX 1: Make the settings button functional.
                       _buildProfileMenuItem(
                         context: context,
                         icon: Icons.settings,
@@ -86,7 +85,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // THE FIX 2: Update the header to accept the user's name.
   Widget _buildProfileHeader(String? imagePath, String userName) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
@@ -98,9 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 radius: 40,
                 backgroundColor: Colors.white24,
                 backgroundImage: imagePath != null ? FileImage(File(imagePath)) : null,
-                child: imagePath == null
-                    ? const Icon(Icons.person, size: 40, color: Colors.white70)
-                    : null,
+                child: imagePath == null ? const Icon(Icons.person, size: 40, color: Colors.white70) : null,
               ),
               Positioned(
                 bottom: 0,
@@ -109,10 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: _pickImage,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                     child: const Icon(Icons.edit, size: 16, color: Color(0xFF2D1458)),
                   ),
                 ),
@@ -120,7 +113,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(width: 20),
-          // Use the dynamic user name
           Text(
             'Hi $userName!',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -130,13 +122,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileMenuItem({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildProfileMenuItem({ required BuildContext context, required IconData icon, required String title, required String subtitle, required VoidCallback onTap, }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15.0),
       child: GestureDetector(
