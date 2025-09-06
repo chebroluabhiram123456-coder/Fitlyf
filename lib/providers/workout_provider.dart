@@ -13,7 +13,7 @@ class WorkoutProvider with ChangeNotifier {
   final List<Workout> _workouts = [
     Workout(
       id: 'w1',
-      name: 'Full Body A',
+      name: 'Full Body Strength A',
       exercises: [
         Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
         Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
@@ -31,15 +31,21 @@ class WorkoutProvider with ChangeNotifier {
   
   final List<Exercise> _customExercises = [];
 
+  // THE FIX 1: The weekly plan now stores muscle groups, not workout IDs.
   Map<String, String> _weeklyPlan = {
-    'Monday': 'w1',
-    'Tuesday': 'Rest',
-    'Wednesday': 'w2',
+    'Monday': 'Chest',
+    'Tuesday': 'Back',
+    'Wednesday': 'Legs',
     'Thursday': 'Rest',
-    'Friday': 'w1',
-    'Saturday': 'Cardio',
+    'Friday': 'Shoulders',
+    'Saturday': 'Biceps', // You can now be this specific!
     'Sunday': 'Rest',
   };
+
+  // THE FIX 2: A definitive list of muscle groups for the dropdown.
+  final List<String> availableMuscleGroups = [
+    'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Rest'
+  ];
 
   // Getters
   DateTime get selectedDate => _selectedDate;
@@ -60,33 +66,35 @@ class WorkoutProvider with ChangeNotifier {
     return entry.value == -1.0 ? null : entry.value;
   }
 
+  // THE FIX 3: The selectedWorkout getter is now much smarter.
+  // It builds a workout on-the-fly based on the day's target muscle.
   Workout? get selectedWorkout {
     final dayOfWeek = _selectedDate.weekday;
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
-    final workoutId = _weeklyPlan[dayName];
-    if (workoutId == null || workoutId == 'Rest' || workoutId == 'Cardio') {
+    final targetMuscle = _weeklyPlan[dayName];
+
+    if (targetMuscle == null || targetMuscle == 'Rest') {
       return null;
     }
-    return _workouts.firstWhere((w) => w.id == workoutId);
+
+    // Find all exercises that match the target muscle for the day.
+    final exercisesForDay = allExercises.where((ex) => ex.targetMuscle == targetMuscle).toList();
+
+    if (exercisesForDay.isEmpty) {
+      // Return a workout with an empty list if no exercises exist for that muscle yet
+      return Workout(id: 'day_${dayName.toLowerCase()}', name: '$targetMuscle Day', exercises: []);
+    }
+
+    // Create a new Workout object just for today.
+    return Workout(
+      id: 'day_${dayName.toLowerCase()}',
+      name: '$targetMuscle Day',
+      exercises: exercisesForDay,
+    );
   }
 
   List<Exercise> get allExercises {
     return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
-  }
-
-  // THE FIX: New function to get a description of the muscles trained in a workout.
-  String getMusclesForWorkout(String workoutId) {
-    if (workoutId == 'Rest' || workoutId == 'Cardio') {
-      return workoutId; // Just return "Rest" or "Cardio"
-    }
-    try {
-      final workout = _workouts.firstWhere((w) => w.id == workoutId);
-      // Use a Set to get unique muscle groups
-      final muscles = workout.exercises.map((ex) => ex.targetMuscle).toSet();
-      return muscles.join(' & '); // Joins them like "Chest & Shoulders"
-    } catch (e) {
-      return "Workout not found";
-    }
   }
 
   // Methods
@@ -122,9 +130,10 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  void updateWeeklyPlan(String day, String workoutId) {
-    _weeklyPlan[day] = workoutId;
-    notifyListeners(); // This is the key to syncing with the home screen
+  // This function now updates the plan with a muscle group name.
+  void updateWeeklyPlan(String day, String muscleGroup) {
+    _weeklyPlan[day] = muscleGroup;
+    notifyListeners();
   }
 
   void toggleExerciseCompletion(String exerciseId, bool isCompleted) {
