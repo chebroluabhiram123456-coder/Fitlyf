@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fitlyf/models/workout_model.dart';
-import 'package:fitlyf/models/exercise_model.dart'; // <-- THE FIX: This line was missing.
+import 'package:fitlyf/models/exercise_model.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
@@ -9,7 +9,6 @@ import 'package:fitlyf/screens/exercise_detail_screen.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final Workout workout;
-
   const WorkoutDetailScreen({required this.workout, Key? key}) : super(key: key);
 
   @override
@@ -20,7 +19,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   Timer? _timer;
   int _seconds = 0;
   bool _isTimerRunning = false;
-  
   late List<Exercise> _orderedExercises;
 
   @override
@@ -86,6 +84,9 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     itemCount: _orderedExercises.length,
                     itemBuilder: (ctx, index) {
                       final exercise = _orderedExercises[index];
+                      // Find the latest state of this exercise from the provider
+                      final latestExerciseState = workoutProvider.allExercises.firstWhere((e) => e.id == exercise.id, orElse: () => exercise);
+                      
                       return Padding(
                         key: ValueKey(exercise.id),
                         padding: const EdgeInsets.only(bottom: 15.0),
@@ -93,7 +94,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           padding: const EdgeInsets.all(5),
                           child: ListTile(
                             leading: Checkbox(
-                              value: exercise.isCompleted,
+                              value: latestExerciseState.isCompleted,
                               activeColor: Colors.white,
                               checkColor: const Color(0xFF2D1458),
                               onChanged: (bool? value) {
@@ -124,9 +125,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     },
                     onReorder: (int oldIndex, int newIndex) {
                       setState(() {
-                         if (newIndex > oldIndex) {
-                           newIndex -= 1;
-                         }
+                         if (newIndex > oldIndex) newIndex -= 1;
                          final item = _orderedExercises.removeAt(oldIndex);
                          _orderedExercises.insert(newIndex, item);
                       });
@@ -137,6 +136,39 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             ),
             _buildFinishWorkoutButton(context),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinishWorkoutButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () {
+            final provider = Provider.of<WorkoutProvider>(context, listen: false);
+            
+            // THE FIX: Call the new function to tick all checkboxes.
+            provider.markAllExercisesAsComplete(_orderedExercises);
+
+            // This marks the day as completed for the calendar.
+            provider.markWorkoutAsComplete(provider.selectedDate);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Workout Complete! Great job!"), backgroundColor: Colors.green),
+            );
+            Navigator.of(context).pop();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF2D1458),
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          ),
+          child: const Text('Finish Workout'),
         ),
       ),
     );
@@ -154,46 +186,11 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
               _formatTime(),
               style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2),
             ),
-            Row(
-              children: [
-                IconButton(
-                  icon: Icon(_isTimerRunning ? Icons.pause_circle_outline : Icons.play_circle_outline),
-                  iconSize: 30,
-                  onPressed: _isTimerRunning ? _pauseTimer : _startTimer,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.replay),
-                  iconSize: 30,
-                  onPressed: _resetTimer,
-                ),
-              ],
-            ),
+            Row(children: [
+                IconButton(icon: Icon(_isTimerRunning ? Icons.pause_circle_outline : Icons.play_circle_outline), iconSize: 30, onPressed: _isTimerRunning ? _pauseTimer : _startTimer),
+                IconButton(icon: const Icon(Icons.replay), iconSize: 30, onPressed: _resetTimer),
+            ]),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFinishWorkoutButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Workout Complete! Great job!"), backgroundColor: Colors.green),
-            );
-            Navigator.of(context).pop();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF2D1458),
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          ),
-          child: const Text('Finish Workout'),
         ),
       ),
     );
