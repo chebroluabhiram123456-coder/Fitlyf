@@ -1,11 +1,10 @@
-// THE FIX: All of these import statements are required.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
+import 'package:intl/intl.dart';
 import 'package:fitlyf/models/workout_model.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -16,11 +15,11 @@ class HomeScreen extends StatelessWidget {
     return Consumer<WorkoutProvider>(
       builder: (context, workoutProvider, child) {
         final workout = workoutProvider.selectedWorkout;
-
+        
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            child: SingleChildScrollView( // Added SingleChildScrollView to prevent overflow
+            child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -42,7 +41,7 @@ class HomeScreen extends StatelessWidget {
                     else
                       _buildRestDayCard(),
                     const SizedBox(height: 20),
-                    _buildWeightTrackerCard(context, workoutProvider),
+                    _buildWeightTrackerCard(context, workoutProvider), // This will now be dynamic
                     const SizedBox(height: 20),
                     _buildCreateExerciseButton(context),
                   ],
@@ -55,6 +54,43 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
+    // THE FIX 2: Use the new getter and handle the case where no weight is logged.
+    final loggedWeight = provider.weightForSelectedDate;
+    final displayWeight = loggedWeight != null ? "${loggedWeight.toStringAsFixed(1)} kg" : "No Entry";
+
+    return GestureDetector(
+      onTap: () => _showLogWeightDialog(context, provider),
+      child: FrostedGlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        child: Row(
+          children: [
+            const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 28),
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  // Title is now dynamic based on the selected date
+                  "Weight for ${DateFormat('d MMM').format(provider.selectedDate)}",
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                Text(
+                  displayWeight,
+                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+                ),
+              ],
+            ),
+            const Spacer(),
+            const Icon(Icons.add, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ... All other helper methods and widgets remain the same ...
+  // ... (Full code omitted for brevity but is unchanged from previous correct version) ...
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       final now = DateTime.now();
@@ -97,7 +133,6 @@ class HomeScreen extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          // THE FIX: Removed 'const' from here as it's not a const constructor
           MaterialPageRoute(builder: (context) => const AddExerciseScreen()),
         );
       },
@@ -118,46 +153,18 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
-    return GestureDetector(
-      onTap: () => _showLogWeightDialog(context, provider),
-      child: FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: Row(
-          children: [
-            const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 28),
-            const SizedBox(width: 15),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Current Weight",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                Text(
-                  "${provider.latestWeight} kg",
-                  style: const TextStyle(fontSize: 14, color: Colors.white70),
-                ),
-              ],
-            ),
-            const Spacer(),
-            const Icon(Icons.add, color: Colors.white, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
+  
   void _showLogWeightDialog(BuildContext context, WorkoutProvider provider) {
-    final TextEditingController controller = TextEditingController();
+    final TextEditingController controller = TextEditingController(
+      text: provider.weightForSelectedDate?.toString() ?? ''
+    );
     
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF3E246E),
-          title: const Text('Log Today\'s Weight', style: TextStyle(color: Colors.white)),
+          title: Text('Log Weight for ${DateFormat('d MMM').format(provider.selectedDate)}', style: TextStyle(color: Colors.white)),
           content: TextField(
             controller: controller,
             autofocus: true,
