@@ -1,36 +1,23 @@
-# Codemagic build configuration for Fitlyf Android app
 workflows:
-  android-build:
-    name: Android Build
-    instance_type: mac_mini_m1 # Use the free Mac Mini machine
+  android-build-free-tier:
+    name: Android Build (Free Tier)
+    instance_type: mac_mini_m1
     environment:
-      flutter: 3.19.6 # Pinned to a known stable version
+      flutter: 3.19.6
       xcode: 15.2
       java: 17
     scripts:
-      # --- SETUP AND VERIFICATION ---
-      # Force Java 17 and verify its version in the logs.
+      - echo "JAVA_HOME=$(/usr/libexec/java_home -v 17)" >> $CM_ENV
       - export JAVA_HOME=$(/usr/libexec/java_home -v 17)
       - java -version
-      
-      # --- AGGRESSIVE CLEANING STEPS ---
-      # 1. Clean all Flutter build artifacts.
-      - echo "--- CLEANING FLUTTER PROJECT ---"
-      - flutter clean
-      
-      # 2. Get the project dependencies.
-      - flutter packages pub get
-      
-      # 3. THIS IS THE NEW FIX: Force the Android Gradle wrapper to clean itself.
-      - echo "--- CLEANING GRADLE PROJECT ---"
+      - flutter --version
+      - flutter pub get
+      - flutter clean # <-- THE FIX: Ensures a clean build every time.
       - cd android && ./gradlew clean && cd ..
-
-      # --- BUILD STEP ---
-      - echo "--- STARTING BUILD ---"
-      - flutter build appbundle --release
+      - flutter build apk --debug
     artifacts:
-      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/apk/debug/*.apk
     publishing:
       email:
         recipients:
-          - your.email@example.com # Optional: Add your email
+          - your.email@example.com
