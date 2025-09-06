@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
-import 'package:fitlyf/screens/workout_detail_screen.dart';
-import 'package:fitlyf/screens/add_exercise_screen.dart';
-import 'package:intl/intl.dart';
-import 'package:fitlyf/models/workout_model.dart';
+import 'package.fitlyf/screens/workout_detail_screen.dart';
+import 'package.fitlyf/screens/add_exercise_screen.dart';
+import 'package.intl/intl.dart';
+import 'package.fitlyf/models/workout_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // The Consumer widget ensures this screen rebuilds whenever the provider changes.
+    // THE FIX: We wrap the entire screen in a Consumer widget.
+    // This widget's job is to listen for any change from the WorkoutProvider
+    // and rebuild the UI automatically. This creates the two-way sync.
     return Consumer<WorkoutProvider>(
       builder: (context, workoutProvider, child) {
-        // 2. THE WORKOUT CARD READS THE WORKOUT FOR THE CURRENTLY SELECTED DATE
+        
+        // Now, this line will be re-run whenever the date OR the plan changes.
         final workout = workoutProvider.selectedWorkout;
 
         return Container(
@@ -45,7 +48,6 @@ class HomeScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 18, color: Colors.white70),
                     ),
                     const SizedBox(height: 30),
-                    // 3. THE UI UPDATES TO SHOW THE CORRECT WORKOUT OR REST DAY
                     if (workout != null)
                       _buildWorkoutCard(context, workout)
                     else
@@ -82,7 +84,6 @@ class HomeScreen extends StatelessWidget {
             date: DateFormat('d').format(date),
             isActive: isActive,
             onTap: () {
-              // 1. TAPPING A DATE TELLS THE PROVIDER TO CHANGE THE SELECTED DATE
               provider.changeSelectedDate(date);
             },
           );
@@ -91,7 +92,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- All other helper widgets remain the same ---
   Widget _buildRestDayCard() {
     return const FrostedGlassCard(
       child: Center(
