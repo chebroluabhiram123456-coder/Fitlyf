@@ -6,6 +6,8 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/exercise_library_screen.dart';
 import 'package:fitlyf/screens/workout_log_screen.dart';
+import 'package:fitlyf/screens/settings_screen.dart'; // <-- IMPORT THE NEW SCREEN
+import 'package:fitlyf/helpers/fade_route.dart'; // Import for smooth transitions
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -35,7 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildProfileHeader(workoutProvider.profileImagePath),
+                _buildProfileHeader(workoutProvider.profileImagePath, workoutProvider.userName),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -46,10 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Exercise Library',
                         subtitle: 'View all your exercises',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ExerciseLibraryScreen()),
-                          );
+                          Navigator.push(context, FadePageRoute(child: const ExerciseLibraryScreen()));
                         },
                       ),
                       _buildProfileMenuItem(
@@ -58,26 +57,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Workout Log',
                         subtitle: 'See your past workouts',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const WorkoutLogScreen()),
-                          );
+                           Navigator.push(context, FadePageRoute(child: const WorkoutLogScreen()));
                         },
                       ),
+                      // THE FIX 1: Make the settings button functional.
                       _buildProfileMenuItem(
                         context: context,
                         icon: Icons.settings,
                         title: 'Settings',
                         subtitle: 'App preferences',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(context, FadePageRoute(child: const SettingsScreen()));
+                        },
                       ),
                       const SizedBox(height: 30),
                       TextButton(
                         onPressed: () {},
-                        child: const Text(
-                          'Log Out',
-                          style: TextStyle(color: Colors.redAccent, fontSize: 16),
-                        ),
+                        child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 16)),
                       ),
                     ],
                   ),
@@ -90,7 +86,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader(String? imagePath) {
+  // THE FIX 2: Update the header to accept the user's name.
+  Widget _buildProfileHeader(String? imagePath, String userName) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
@@ -123,9 +120,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(width: 20),
-          // This will now automatically use the Poppins font from the theme
+          // Use the dynamic user name
           Text(
-            'Hi User!',
+            'Hi $userName!',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
@@ -154,20 +151,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                    ),
+                    Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(subtitle, style: const TextStyle(fontSize: 14, color: Colors.white70)),
                   ],
                 ),
               ),
