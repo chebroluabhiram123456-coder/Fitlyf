@@ -12,52 +12,86 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final workoutProvider = Provider.of<WorkoutProvider>(context);
-    final workout = workoutProvider.selectedWorkout;
+    // The Consumer widget ensures this screen rebuilds whenever the provider changes.
+    return Consumer<WorkoutProvider>(
+      builder: (context, workoutProvider, child) {
+        // 2. THE WORKOUT CARD READS THE WORKOUT FOR THE CURRENTLY SELECTED DATE
+        final workout = workoutProvider.selectedWorkout;
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCalendarHeader(workoutProvider),
-                const SizedBox(height: 30),
-                const Text(
-                  "Get ready, User",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                Text(
-                  "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
-                  style: const TextStyle(fontSize: 18, color: Colors.white70),
-                ),
-                const SizedBox(height: 30),
-                if (workout != null)
-                  _buildWorkoutCard(context, workout)
-                else
-                  _buildRestDayCard(),
-                const SizedBox(height: 20),
-                _buildWeightTrackerCard(context, workoutProvider),
-                const SizedBox(height: 20),
-                _buildCreateExerciseButton(context),
-              ],
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
           ),
-        ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCalendarHeader(context, workoutProvider),
+                    const SizedBox(height: 30),
+                    const Text(
+                      "Get ready, User",
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    Text(
+                      "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
+                      style: const TextStyle(fontSize: 18, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 30),
+                    // 3. THE UI UPDATES TO SHOW THE CORRECT WORKOUT OR REST DAY
+                    if (workout != null)
+                      _buildWorkoutCard(context, workout)
+                    else
+                      _buildRestDayCard(),
+                    const SizedBox(height: 20),
+                    _buildWeightTrackerCard(context, workoutProvider),
+                    const SizedBox(height: 20),
+                    _buildCreateExerciseButton(context),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
+    final List<DateTime> dates = List.generate(7, (index) {
+      final now = DateTime.now();
+      return now.subtract(Duration(days: now.weekday - 1)).add(Duration(days: index));
+    });
+    return SizedBox(
+      height: 70,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: dates.length,
+        itemBuilder: (context, index) {
+          final date = dates[index];
+          final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
+          return _dateChip(
+            day: DateFormat('E').format(date),
+            date: DateFormat('d').format(date),
+            isActive: isActive,
+            onTap: () {
+              // 1. TAPPING A DATE TELLS THE PROVIDER TO CHANGE THE SELECTED DATE
+              provider.changeSelectedDate(date);
+            },
+          );
+        },
       ),
     );
   }
 
+  // --- All other helper widgets remain the same ---
   Widget _buildRestDayCard() {
     return const FrostedGlassCard(
       child: Center(
@@ -163,32 +197,6 @@ class HomeScreen extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildCalendarHeader(WorkoutProvider provider) {
-    final List<DateTime> dates = List.generate(7, (index) {
-      final now = DateTime.now();
-      return now.subtract(Duration(days: now.weekday - 1)).add(Duration(days: index));
-    });
-    return SizedBox(
-      height: 70,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: dates.length,
-        itemBuilder: (context, index) {
-          final date = dates[index];
-          final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
-          return _dateChip(
-            day: DateFormat('E').format(date),
-            date: DateFormat('d').format(date),
-            isActive: isActive,
-            onTap: () {
-              provider.changeSelectedDate(date);
-            },
-          );
-        },
-      ),
     );
   }
 
