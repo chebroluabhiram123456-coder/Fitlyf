@@ -1,38 +1,39 @@
-import 'package.flutter/material.dart';
-import 'package.intl/intl.dart';
+// THE FIX 1: Add all missing import statements.
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
 import '../models/set_log_model.dart';
 
 enum WorkoutStatus { Completed, Skipped, Scheduled, Rest, Future }
 
+// THE FIX 2: Add 'with ChangeNotifier' to the class definition.
 class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
   String _userName = "User";
   DateTime _selectedDate = DateTime.now();
-  Map<DateTime, double> _weightHistory = {};
-  Map<DateTime, Workout> _workoutLog = {};
+  final Map<DateTime, double> _weightHistory = {};
+  final Map<DateTime, Workout> _workoutLog = {};
   final List<Exercise> _customExercises = [];
+
   final List<Workout> _workouts = [
-    Workout( id: 'w1', name: 'Full Body A', exercises: [
-        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
-        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
-    ]),
-    Workout( id: 'w2', name: 'Full Body B', exercises: [
-        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5),
-        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5),
-    ]),
+    Workout(
+      id: 'w1', name: 'Full Body A', exercises: [
+        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8, description: 'An upper-body strength exercise that targets the pectoral muscles, deltoids, and triceps.'),
+        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10, description: 'A powerful overhead press variation that utilizes leg drive to lift heavier weights.'),
+      ]
+    ),
+    Workout(
+      id: 'w2', name: 'Full Body B', exercises: [
+        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5, description: 'A fundamental lower-body exercise that strengthens the quadriceps, hamstrings, and glutes.'),
+        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5, description: 'A compound lift that works the entire posterior chain, including the back, glutes, and hamstrings.'),
+      ]
+    ),
   ];
   
-  // THE FIX 1: The weekly plan now stores a LIST of muscle groups for each day.
   Map<String, List<String>> _weeklyPlan = {
-    'Monday': ['Chest', 'Biceps'],
-    'Tuesday': ['Back', 'Triceps'],
-    'Wednesday': ['Legs', 'Shoulders'],
-    'Thursday': ['Rest'],
-    'Friday': ['Chest', 'Back'],
-    'Saturday': ['Abs'],
-    'Sunday': ['Rest'],
+    'Monday': ['Chest', 'Biceps'], 'Tuesday': ['Back', 'Triceps'], 'Wednesday': ['Legs', 'Shoulders'],
+    'Thursday': ['Rest'], 'Friday': ['Chest', 'Back'], 'Saturday': ['Abs'], 'Sunday': ['Rest'],
   };
 
   final List<String> availableMuscleGroups = [
@@ -81,14 +82,6 @@ class WorkoutProvider with ChangeNotifier {
   }
 
   // --- Methods ---
-  
-  // THE FIX 2: This function now accepts a LIST of muscle groups.
-  void updateWeeklyPlan(String day, List<String> muscleGroups) {
-    _weeklyPlan[day] = muscleGroups;
-    notifyListeners();
-  }
-
-  // ... All other methods are correct ...
   void updateUserName(String newName) { _userName = newName; notifyListeners(); }
   WorkoutStatus getWorkoutStatusForDate(DateTime date) { final today = DateUtils.dateOnly(DateTime.now()); final dateOnly = DateUtils.dateOnly(date); if (dateOnly.isAfter(today)) return WorkoutStatus.Future; if (_workoutLog.containsKey(dateOnly)) return WorkoutStatus.Completed; final dayName = DateFormat('EEEE').format(dateOnly); final plan = _weeklyPlan[dayName]; if (plan == null || plan.contains('Rest')) return WorkoutStatus.Rest; return WorkoutStatus.Skipped; }
   void logWorkout(DateTime date, Workout workout) { _workoutLog[DateUtils.dateOnly(date)] = workout; if (achievements['first_workout'] == false) { achievements['first_workout'] = true; } notifyListeners(); }
@@ -100,6 +93,7 @@ class WorkoutProvider with ChangeNotifier {
   void addCustomExercise({ required String name, required String targetMuscle, String? description, required int sets, required int reps, String? imageUrl, String? videoUrl }) { final newExercise = Exercise(id: 'custom_${DateTime.now().toIso8601String()}', name: name, targetMuscle: targetMuscle, description: description, sets: sets, reps: reps, imageUrl: imageUrl, videoUrl: videoUrl); _customExercises.add(newExercise); notifyListeners(); }
   void logUserWeight(double weight) { _weightHistory.removeWhere((key, value) => DateUtils.isSameDay(key, _selectedDate)); _weightHistory[_selectedDate] = weight; notifyListeners(); }
   void changeSelectedDate(DateTime newDate) { _selectedDate = newDate; notifyListeners(); }
+  void updateWeeklyPlan(String day, List<String> muscleGroups) { _weeklyPlan[day] = muscleGroups; notifyListeners(); }
   void toggleExerciseCompletion(String exerciseId, bool isCompleted) { allExercises.firstWhere((ex) => ex.id == exerciseId).isCompleted = isCompleted; notifyListeners(); }
   void updateProfilePicture(String imagePath) { _profileImagePath = imagePath; notifyListeners(); }
 }
