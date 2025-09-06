@@ -12,52 +12,40 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // THE FIX: We wrap the entire screen in a Consumer widget.
-    // This widget's job is to listen for any change from the WorkoutProvider
-    // and rebuild the UI automatically. This creates the two-way sync.
     return Consumer<WorkoutProvider>(
       builder: (context, workoutProvider, child) {
-        
-        // Now, this line will be re-run whenever the date OR the plan changes.
         final workout = workoutProvider.selectedWorkout;
 
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCalendarHeader(context, workoutProvider),
-                    const SizedBox(height: 30),
-                    const Text(
-                      "Get ready, User",
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    Text(
-                      "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
-                      style: const TextStyle(fontSize: 18, color: Colors.white70),
-                    ),
-                    const SizedBox(height: 30),
-                    if (workout != null)
-                      _buildWorkoutCard(context, workout)
-                    else
-                      _buildRestDayCard(),
-                    const SizedBox(height: 20),
-                    _buildWeightTrackerCard(context, workoutProvider),
-                    const SizedBox(height: 20),
-                    _buildCreateExerciseButton(context),
-                  ],
-                ),
+        // THE FIX: REMOVED THE OUTER CONTAINER WITH THE GRADIENT
+        // The Scaffold is now the top-level widget.
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCalendarHeader(context, workoutProvider),
+                  const SizedBox(height: 30),
+                  const Text(
+                    "Get ready, User",
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  Text(
+                    "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
+                    style: const TextStyle(fontSize: 18, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 30),
+                  if (workout != null)
+                    _buildWorkoutCard(context, workout)
+                  else
+                    _buildRestDayCard(),
+                  const SizedBox(height: 20),
+                  _buildWeightTrackerCard(context, workoutProvider),
+                  const SizedBox(height: 20),
+                  _buildCreateExerciseButton(context),
+                ],
               ),
             ),
           ),
@@ -66,6 +54,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // ... All your other _build... helper methods remain the same ...
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       final now = DateTime.now();
