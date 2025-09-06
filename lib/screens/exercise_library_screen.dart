@@ -8,7 +8,6 @@ import 'package:fitlyf/screens/add_exercise_screen.dart';
 class ExerciseLibraryScreen extends StatelessWidget {
   const ExerciseLibraryScreen({Key? key}) : super(key: key);
 
-  // Helper function to show the delete confirmation dialog
   void _showDeleteConfirmation(BuildContext context, WorkoutProvider provider, Exercise exercise) {
     showDialog(
       context: context,
@@ -95,9 +94,6 @@ class ExerciseLibraryScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       ...exercises.map((exercise) {
-                        // Check if the exercise is a custom one
-                        final isCustom = exercise.id.startsWith('custom_');
-
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10.0),
                           child: FrostedGlassCard(
@@ -127,14 +123,13 @@ class ExerciseLibraryScreen extends StatelessWidget {
                                     );
                                   },
                                 ),
-                                // THE FIX: Only show the delete button for custom exercises
-                                if (isCustom)
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                                    onPressed: () {
-                                      _showDeleteConfirmation(context, workoutProvider, exercise);
-                                    },
-                                  ),
+                                // THE FIX 2: Removed the condition. The delete button now shows for ALL exercises.
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                  onPressed: () {
+                                    _showDeleteConfirmation(context, workoutProvider, exercise);
+                                  },
+                                ),
                               ],
                             ),
                           ),
