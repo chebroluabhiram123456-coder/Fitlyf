@@ -12,10 +12,11 @@ class WorkoutProvider with ChangeNotifier {
     DateTime.now(): 76.0,
   };
 
+  // Main list of pre-defined workouts
   final List<Workout> _workouts = [
     Workout(
       id: 'w1',
-      name: 'Full Body Strength A',
+      name: 'Full Body A',
       exercises: [
         Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
         Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
@@ -90,6 +91,24 @@ class WorkoutProvider with ChangeNotifier {
   }
 
   // Methods
+  // THE FIX: New function to handle the drag-and-drop logic.
+  void reorderWorkoutExercises(String workoutId, int oldIndex, int newIndex) {
+    try {
+      // Find the workout we are editing in the main list
+      final workout = _workouts.firstWhere((w) => w.id == workoutId);
+      
+      // Standard reorder logic
+      final item = workout.exercises.removeAt(oldIndex);
+      workout.exercises.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
+      
+      notifyListeners();
+    } catch (e) {
+      // This will handle cases where the workout is a dynamically generated one (like from the home screen)
+      // For now, we print an error, but this logic can be expanded.
+      print("Could not reorder exercises for workout ID: $workoutId. It may not be a pre-defined workout.");
+    }
+  }
+
   void updateProfilePicture(String imagePath) {
     _profileImagePath = imagePath;
     notifyListeners();
