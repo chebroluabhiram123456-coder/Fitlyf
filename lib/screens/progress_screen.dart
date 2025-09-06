@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:fitlyf/screens/weight_detail_screen.dart';
 import 'package:fitlyf/helpers/fade_route.dart';
+import 'package:fitlyf/screens/workout_history_screen.dart'; // <-- IMPORT NEW SCREEN
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({Key? key}) : super(key: key);
@@ -16,8 +17,6 @@ class ProgressScreen extends StatelessWidget {
       builder: (context, workoutProvider, child) {
         final weightHistory = workoutProvider.weightHistory.entries.toList();
         weightHistory.sort((a, b) => a.key.compareTo(b.key));
-        
-        // THE FIX 2: Get today's specific workout to calculate stats.
         final todaysWorkout = workoutProvider.getTodaysWorkout;
 
         return Scaffold(
@@ -42,14 +41,17 @@ class ProgressScreen extends StatelessWidget {
                     child: _buildWeightChartCard(context, weightHistory),
                   ),
                   const SizedBox(height: 30),
-                  
-                  // THE FIX 3: Pass today's workout to the stats card.
                   _buildStatsSection(context, todaysWorkout),
-
                   const SizedBox(height: 30),
                   const Text("Workout Streak", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 20),
-                  _buildStreakCalendar(context, workoutProvider),
+                  // THE FIX: Make the calendar tappable
+                  GestureDetector(
+                    onTap: () {
+                       Navigator.push(context, FadePageRoute(child: const WorkoutHistoryScreen()));
+                    },
+                    child: _buildStreakCalendar(context, workoutProvider),
+                  ),
                 ],
               ),
             ),
@@ -58,60 +60,34 @@ class ProgressScreen extends StatelessWidget {
       },
     );
   }
-  
-  // THE FIX 4: This is a new helper widget to keep the code clean.
+
+  // ... All other helper methods are unchanged ...
   Widget _buildStatsSection(BuildContext context, Workout? todaysWorkout) {
     if (todaysWorkout == null) {
-      // If it's a rest day, show a special message.
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text("Today's Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 20),
-          const FrostedGlassCard(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(25.0),
-                child: Text("It's a Rest Day!", style: TextStyle(fontSize: 18, color: Colors.white70)),
-              ),
-            ),
-          ),
-        ],
-      );
+          const FrostedGlassCard(child: Center(child: Padding(padding: EdgeInsets.all(25.0), child: Text("It's a Rest Day!", style: TextStyle(fontSize: 18, color: Colors.white70))))),
+      ]);
     }
-
-    // If it's a workout day, calculate and show the stats.
     final completedExercises = todaysWorkout.exercises.where((ex) => ex.isCompleted).length;
     final totalExercises = todaysWorkout.exercises.length;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text("Today's Stats: ${todaysWorkout.name}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 20),
         _buildStatsCard(context, completedExercises, totalExercises),
-      ],
-    );
+    ]);
   }
-
-  // ... All other helper methods (_buildStreakCalendar, _buildWeightChartCard, etc.) are unchanged ...
   Widget _buildStreakCalendar(BuildContext context, WorkoutProvider provider) {
     final today = DateTime.now();
     final firstDayOfMonth = DateTime(today.year, today.month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(today.year, today.month);
     final startingWeekday = firstDayOfMonth.weekday - 1; 
-
     return FrostedGlassCard(
-      child: Column(
-        children: [
+      child: Column( children: [
           Text(DateFormat('MMMM yyyy').format(today), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
-                .map((day) => Text(day, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)))
-                .toList(),
-          ),
+          Row( mainAxisAlignment: MainAxisAlignment.spaceAround, children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((day) => Text(day, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))).toList()),
           const SizedBox(height: 10),
           GridView.builder(
             shrinkWrap: true,
@@ -123,8 +99,7 @@ class ProgressScreen extends StatelessWidget {
               final dayOfMonth = index - startingWeekday + 1;
               final date = DateTime(today.year, today.month, dayOfMonth);
               final status = provider.getWorkoutStatusForDate(date);
-              IconData? icon;
-              Color? iconColor;
+              IconData? icon; Color? iconColor;
               if (status == WorkoutStatus.Completed) { icon = Icons.check_circle; iconColor = Colors.greenAccent; }
               else if (status == WorkoutStatus.Skipped) { icon = Icons.cancel; iconColor = Colors.redAccent; }
               return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -133,8 +108,7 @@ class ProgressScreen extends StatelessWidget {
               ]);
             },
           )
-        ],
-      ),
+      ]),
     );
   }
   Widget _buildWeightChartCard(BuildContext context, List<MapEntry<DateTime, double>> history) {
