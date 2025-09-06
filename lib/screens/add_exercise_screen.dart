@@ -26,8 +26,6 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
   final ImagePicker _picker = ImagePicker();
 
   bool get _isEditMode => widget.exerciseToEdit != null;
-  // Check if the exercise is a custom one and can be deleted
-  bool get _canDelete => _isEditMode && widget.exerciseToEdit!.id.startsWith('custom_');
 
   final List<String> _muscleGroups = [
     'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Cardio', 'Other'
@@ -42,12 +40,8 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       _setsController.text = exercise.sets.toString();
       _repsController.text = exercise.reps.toString();
       _selectedMuscleGroup = exercise.targetMuscle;
-      if (exercise.imageUrl != null) {
-        _imageFile = File(exercise.imageUrl!);
-      }
-      if (exercise.videoUrl != null) {
-        _videoFile = File(exercise.videoUrl!);
-      }
+      if (exercise.imageUrl != null) _imageFile = File(exercise.imageUrl!);
+      if (exercise.videoUrl != null) _videoFile = File(exercise.videoUrl!);
     }
   }
 
@@ -61,16 +55,12 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() { _imageFile = File(pickedFile.path); });
-    }
+    if (pickedFile != null) setState(() { _imageFile = File(pickedFile.path); });
   }
 
   Future<void> _pickVideo() async {
     final XFile? pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() { _videoFile = File(pickedFile.path); });
-    }
+    if (pickedFile != null) setState(() { _videoFile = File(pickedFile.path); });
   }
 
   void _saveForm() {
@@ -101,17 +91,13 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${_nameController.text} has been saved!'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(content: Text('${_nameController.text} has been saved!'), backgroundColor: Colors.green),
       );
       
       Navigator.of(context).pop();
     }
   }
 
-  // Helper function to show the delete confirmation dialog
   void _showDeleteConfirmation() {
     final provider = Provider.of<WorkoutProvider>(context, listen: false);
     final exercise = widget.exerciseToEdit!;
@@ -130,8 +116,8 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
             child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
             onPressed: () {
               provider.deleteExercise(exercise.id);
-              Navigator.of(ctx).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back from edit screen
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('${exercise.name} deleted.'), backgroundColor: Colors.red),
               );
@@ -158,9 +144,9 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
           title: Text(_isEditMode ? 'Edit Exercise' : 'Create New Exercise'),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          // THE FIX: Add a delete button to the app bar if we can delete
           actions: [
-            if (_canDelete)
+            // THE FIX 3: Removed the condition. The delete button now shows whenever in Edit Mode.
+            if (_isEditMode)
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                 onPressed: _showDeleteConfirmation,
@@ -227,7 +213,6 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     );
   }
   
-  // ... The rest of the helper methods remain unchanged ...
   Widget _buildMediaPicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
