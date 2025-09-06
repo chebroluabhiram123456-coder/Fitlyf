@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
@@ -18,31 +17,21 @@ class WorkoutDetailScreen extends StatefulWidget {
 }
 
 class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
-  Timer? _timer;
-  int _seconds = 0;
-  bool _isTimerRunning = false;
-  
-  // This list holds the user's custom order for this session
   late List<Exercise> _orderedExercises;
 
   @override
   void initState() {
     super.initState();
-    // We create a local, editable copy of the exercises
     _orderedExercises = List.from(widget.workout.exercises);
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WorkoutProvider>(context, listen: false).startWorkoutSession();
+    });
   }
   
-  // --- Timer functions are unchanged ---
-  void _startTimer() { setState(() { _isTimerRunning = true; }); _timer = Timer.periodic(const Duration(seconds: 1), (timer) { setState(() { _seconds++; }); }); }
-  void _pauseTimer() { _timer?.cancel(); setState(() { _isTimerRunning = false; }); }
-  void _resetTimer() { _timer?.cancel(); setState(() { _seconds = 0; _isTimerRunning = false; }); }
-  String _formatTime() { int minutes = _seconds ~/ 60; int seconds = _seconds % 60; return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'; }
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +52,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         ),
         body: Column(
           children: [
-            _buildTimerCard(),
             Expanded(
               child: Consumer<WorkoutProvider>(
                 builder: (context, workoutProvider, child) {
@@ -72,7 +60,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                     itemCount: _orderedExercises.length,
                     itemBuilder: (ctx, index) {
                       final exercise = _orderedExercises[index];
-                      final latestExerciseState = workoutProvider.allExercises.firstWhere((e) => e.id == exercise.id, orElse: () => exercise);
                       
                       return Padding(
                         key: ValueKey(exercise.id),
@@ -81,12 +68,18 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                           padding: const EdgeInsets.all(5),
                           child: ListTile(
                             leading: Checkbox(
-                              value: latestExerciseState.isCompleted,
+                              value: workoutProvider.isExerciseInProgressCompleted(exercise.id),
                               activeColor: Colors.white,
                               checkColor: const Color(0xFF2D1458),
                               onChanged: (bool? value) {
                                 if (value != null) {
-                                  workoutProvider.toggleExerciseCompletion(exercise.id, value);
+                                  // THE FIX: The new, smart logic lives here.
+                                  workoutProvider.toggleInProgressExerciseCompletion(exercise.id, value);
+                                  
+                                  // Check if this was the last box to be ticked.
+                                  if (workoutProvider.areAllExercisesComplete(_orderedExercises)) {
+                                    _finishWorkout(context, workoutProvider);
+                                  }
                                 }
                               },
                             ),
@@ -123,7 +116,21 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
     );
   }
 
-  // THE FIX: This button now uses the reordered list.
+  // THE FIX: Created a helper function for finishing the workout to avoid duplicate code.
+  void _finishWorkout(BuildContext context, WorkoutProvider provider) {
+    final completedWorkout = Workout(
+      id: widget.workout.id,
+      name: widget.workout.name,
+      exercises: _orderedExercises,
+    );
+    provider.logWorkout(provider.selectedDate, completedWorkout);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Workout Complete! Great job!"), backgroundColor: Colors.green),
+    );
+    Navigator.of(context).pop();
+  }
+
   Widget _buildStartWorkoutButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
@@ -131,18 +138,10 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
-            // Create a new workout object on the fly using the reordered list
-            final reorderedWorkout = Workout(
-              id: widget.workout.id,
-              name: widget.workout.name,
-              exercises: _orderedExercises, // Use the stateful, reordered list
-            );
-            
-            // Pass this new, temporary workout object to the live screen
-            Navigator.push(
-              context,
-              FadePageRoute(child: LiveWorkoutScreen(workout: reorderedWorkout)),
-            );
+            // THE FIX: The manual button now also calls our new helper function.
+            final provider = Provider.of<WorkoutProvider>(context, listen: false);
+            provider.markAllExercisesAsComplete(_orderedExercises);
+            _finishWorkout(context, provider);
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
@@ -151,26 +150,8 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           ),
-          child: const Text('Start Workout'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimerCard() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20.0, 0, 20.0, 20.0),
-      child: FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(_formatTime(), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            Row(children: [
-                IconButton(icon: Icon(_isTimerRunning ? Icons.pause_circle_outline : Icons.play_circle_outline), iconSize: 30, onPressed: _isTimerRunning ? _pauseTimer : _startTimer),
-                IconButton(icon: const Icon(Icons.replay), iconSize: 30, onPressed: _resetTimer),
-            ]),
-          ],
+          // We can rename this for clarity now
+          child: const Text('Finish Workout Now'),
         ),
       ),
     );
