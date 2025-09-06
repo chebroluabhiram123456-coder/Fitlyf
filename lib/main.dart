@@ -4,6 +4,7 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/screens/home_screen.dart';
 import 'package:fitlyf/screens/progress_screen.dart';
 import 'package:fitlyf/screens/weekly_plan_screen.dart';
+import 'package:fitlyf/screens/profile_screen.dart'; // <-- IMPORT THE NEW SCREEN
 
 void main() {
   runApp(const MyApp());
@@ -19,11 +20,9 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'FitLfy',
         theme: ThemeData(
-          // Set brightness to dark to ensure text and icons default to light colors
           brightness: Brightness.dark, 
           primarySwatch: Colors.deepPurple,
           visualDensity: VisualDensity.adaptivePlatformDensity,
-          // Set canvas color to transparent for our gradient background
           canvasColor: Colors.transparent, 
         ),
         home: const MainScreen(),
@@ -41,10 +40,12 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  // THE FIX 1: Add the ProfileScreen to our list of pages
   static final List<Widget> _widgetOptions = <Widget>[
     const HomeScreen(),
-    const ProgressScreen(), // Assuming you have this screen
+    const ProgressScreen(),
     const WeeklyPlanScreen(),
+    const ProfileScreen(), // <-- NEW SCREEN ADDED HERE
   ];
 
   void _onItemTapped(int index) {
@@ -55,8 +56,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. WRAP THE SCAFFOLD IN A CONTAINER WITH THE GRADIENT
-    // This makes the background permanent across all screens.
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -66,17 +65,16 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
       child: Scaffold(
-        // 2. MAKE THE SCAFFOLD TRANSPARENT TO SHOW THE GRADIENT
         backgroundColor: Colors.transparent,
         body: Center(
           child: _widgetOptions.elementAt(_selectedIndex),
         ),
-        // 3. STYLE THE BOTTOM NAVIGATION BAR
         bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: Colors.transparent, // Make it transparent
-          elevation: 0, // Remove the shadow
-          selectedItemColor: Colors.white, // Color for the active icon
-          unselectedItemColor: Colors.white70, // Color for inactive icons
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+          // THE FIX 2: Add a new item to the navigation bar for the Profile page
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
@@ -90,9 +88,15 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.calendar_today),
               label: 'Plan',
             ),
+            BottomNavigationBarItem( // <-- NEW ITEM ADDED HERE
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
           ],
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
+          // This ensures the labels are always visible
+          type: BottomNavigationBarType.fixed, 
         ),
       ),
     );
