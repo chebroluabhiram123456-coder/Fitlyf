@@ -20,8 +20,6 @@ class HomeScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            // THE FIX: The SingleChildScrollView is back, wrapping the content
-            // to prevent any overflow errors on any screen size.
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -30,8 +28,9 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     _buildCalendarHeader(context, workoutProvider),
                     const SizedBox(height: 30),
+                    // THE FIX: Make the welcome text dynamic.
                     Text(
-                      "Get ready, User",
+                      "Get ready, ${workoutProvider.userName}",
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
@@ -39,8 +38,6 @@ class HomeScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 18, color: Colors.white70),
                     ),
                     const SizedBox(height: 30),
-
-                    // The fluid animation for the workout card
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       transitionBuilder: (Widget child, Animation<double> animation) {
@@ -51,7 +48,7 @@ class HomeScreen extends StatelessWidget {
                       },
                       child: workout != null
                           ? _buildWorkoutCard(context, workout)
-                          : _buildRestDayCard(),
+                          : _buildRestDayCard(context),
                     ),
                     const SizedBox(height: 20),
                     _buildWeightTrackerCard(context, workoutProvider),
@@ -67,55 +64,23 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- All helper methods are correct and unchanged from the previous "animation" step ---
-  // --- Code omitted for brevity ---
-  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
-     return GestureDetector(
-       key: ValueKey<String>(workout.id),
-       onTap: () {
-          if (workout.exercises.isNotEmpty) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
-          }
-       },
-       child: Hero(
-        tag: 'workout_card_${workout.id}',
-        child: Material(
-          type: MaterialType.transparency,
-          child: FrostedGlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  workout.name,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  "${workout.exercises.length} exercises",
-                  style: const TextStyle(fontSize: 16, color: Colors.white70),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.arrow_forward, color: Colors.white),
-                    ),
-                  ],
-                )
-              ],
-            ),
+  // --- All other helper methods are unchanged, only _buildRestDayCard needs context ---
+  Widget _buildRestDayCard(BuildContext context) {
+    return FrostedGlassCard(
+       key: const ValueKey<String>('rest_day'),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40.0),
+          child: Text(
+            "It's a Rest Day! 😌",
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
-       ),
-     );
+      ),
+    );
   }
-
+  
+  // ... Code for other helper methods omitted for brevity but is correct ...
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       final now = DateTime.now();
@@ -142,21 +107,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRestDayCard() {
-    return FrostedGlassCard(
-       key: const ValueKey<String>('rest_day'),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40.0),
-          child: Text(
-            "It's a Rest Day! 😌",
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-    );
-  }
-  
   Widget _buildCreateExerciseButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -275,5 +225,52 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+  
+  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
+     return GestureDetector(
+       key: ValueKey<String>(workout.id),
+       onTap: () {
+          if (workout.exercises.isNotEmpty) {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
+          }
+       },
+       child: Hero(
+        tag: 'workout_card_${workout.id}',
+        child: Material(
+          type: MaterialType.transparency,
+          child: FrostedGlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  workout.name,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  "${workout.exercises.length} exercises",
+                  style: const TextStyle(fontSize: 16, color: Colors.white70),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_forward, color: Colors.white),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        ),
+       ),
+     );
   }
 }
