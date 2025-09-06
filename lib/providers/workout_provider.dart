@@ -1,4 +1,6 @@
+// THE FIX: Add the missing import statements.
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
 
@@ -8,9 +10,20 @@ class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
   String _userName = "User";
   DateTime _selectedDate = DateTime.now();
-  Map<DateTime, double> _weightHistory = { /* ... */ };
-  Map<DateTime, Workout> _workoutLog = { /* ... */ };
-  final List<Exercise> _customExercises = [];
+  final Map<DateTime, double> _weightHistory = {
+    DateTime.now().subtract(const Duration(days: 3)): 75.0,
+    DateTime.now().subtract(const Duration(days: 2)): 75.5,
+    DateTime.now(): 76.0,
+  };
+  final Map<DateTime, Workout> _workoutLog = {
+    DateUtils.dateOnly(DateTime.now().subtract(const Duration(days: 1))): Workout(
+      id: 'logged_w2', name: 'Legs & Shoulders', exercises: [
+        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5, isCompleted: true),
+        Exercise(id: 'ex4', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10, isCompleted: true),
+      ]
+    ),
+  };
+
   final List<Workout> _workouts = [
     Workout( id: 'w1', name: 'Full Body A', exercises: [
         Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
@@ -22,7 +35,7 @@ class WorkoutProvider with ChangeNotifier {
     ]),
   ];
   
-  // THE FIX 1: The weekly plan now stores a LIST of muscle groups.
+  final List<Exercise> _customExercises = [];
   Map<String, List<String>> _weeklyPlan = {
     'Monday': ['Chest', 'Biceps'], 'Tuesday': ['Back', 'Triceps'], 'Wednesday': ['Legs', 'Shoulders'],
     'Thursday': ['Rest'], 'Friday': ['Chest', 'Back'], 'Saturday': ['Abs'], 'Sunday': ['Rest'],
@@ -47,27 +60,25 @@ class WorkoutProvider with ChangeNotifier {
   }
   
   double? get weightForSelectedDate {
-    final entry = _weightHistory.entries.firstWhere((e) => DateUtils.isSameDay(e.key, _selectedDate), orElse: () => MapEntry(DateTime(0), -1.0));
+    final entry = _weightHistory.entries.firstWhere(
+      (entry) => DateUtils.isSameDay(entry.key, _selectedDate),
+      orElse: () => MapEntry(DateTime(0), -1.0),
+    );
     return entry.value == -1.0 ? null : entry.value;
   }
 
   Workout? get selectedWorkout {
     final dayName = DateFormat('EEEE').format(_selectedDate);
     final targetMuscles = _weeklyPlan[dayName];
-
     if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
-
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
     return Workout(id: 'day_${dayName.toLowerCase()}', name: targetMuscles.join(' & '), exercises: exercisesForDay);
   }
-
-  // THE FIX 2: A new getter specifically for the Progress screen stats.
+  
   Workout? get getTodaysWorkout {
     final dayName = DateFormat('EEEE').format(DateTime.now());
     final targetMuscles = _weeklyPlan[dayName];
-
     if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
-
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
     return Workout(id: 'today_workout', name: targetMuscles.join(' & '), exercises: exercisesForDay);
   }
@@ -92,11 +103,7 @@ class WorkoutProvider with ChangeNotifier {
   void logWorkout(DateTime date, Workout workout) { _workoutLog[DateUtils.dateOnly(date)] = workout; notifyListeners(); }
   void deleteLoggedWorkout(DateTime date) { _workoutLog.remove(DateUtils.dateOnly(date)); notifyListeners(); }
   void markAllExercisesAsComplete(List<Exercise> exercises) { for (var ex in exercises) { try { allExercises.firstWhere((e) => e.id == ex.id).isCompleted = true; } catch (e) {} } notifyListeners(); }
-  
-  // THE FIX 3: This function now accepts a LIST of muscle groups.
   void updateWeeklyPlan(String day, List<String> muscleGroups) { _weeklyPlan[day] = muscleGroups; notifyListeners(); }
-
-  // ... All other methods are unchanged ...
   void updateUserName(String newName) { _userName = newName; notifyListeners(); }
   void deleteExercise(String exerciseId) { _customExercises.removeWhere((ex) => ex.id == exerciseId); for (var workout in _workouts) { workout.exercises.removeWhere((ex) => ex.id == exerciseId); } notifyListeners(); }
   void updateExercise(Exercise updatedExercise) { int index = _customExercises.indexWhere((ex) => ex.id == updatedExercise.id); if (index != -1) { _customExercises[index] = updatedExercise; notifyListeners(); return; } for (var workout in _workouts) { index = workout.exercises.indexWhere((ex) => ex.id == updatedExercise.id); if (index != -1) { workout.exercises[index] = updatedExercise; notifyListeners(); return; } } }
