@@ -1,11 +1,12 @@
+// THE FIX: All of these import statements are required.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
-import 'package.fitlyf/screens/workout_detail_screen.dart';
-import 'package.fitlyf/screens/add_exercise_screen.dart';
-import 'package.intl/intl.dart';
-import 'package.fitlyf/models/workout_model.dart';
+import 'package:fitlyf/screens/workout_detail_screen.dart';
+import 'package:fitlyf/screens/add_exercise_screen.dart';
+import 'package:fitlyf/models/workout_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -16,36 +17,36 @@ class HomeScreen extends StatelessWidget {
       builder: (context, workoutProvider, child) {
         final workout = workoutProvider.selectedWorkout;
 
-        // THE FIX: REMOVED THE OUTER CONTAINER WITH THE GRADIENT
-        // The Scaffold is now the top-level widget.
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCalendarHeader(context, workoutProvider),
-                  const SizedBox(height: 30),
-                  const Text(
-                    "Get ready, User",
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  Text(
-                    "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
-                    style: const TextStyle(fontSize: 18, color: Colors.white70),
-                  ),
-                  const SizedBox(height: 30),
-                  if (workout != null)
-                    _buildWorkoutCard(context, workout)
-                  else
-                    _buildRestDayCard(),
-                  const SizedBox(height: 20),
-                  _buildWeightTrackerCard(context, workoutProvider),
-                  const SizedBox(height: 20),
-                  _buildCreateExerciseButton(context),
-                ],
+            child: SingleChildScrollView( // Added SingleChildScrollView to prevent overflow
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCalendarHeader(context, workoutProvider),
+                    const SizedBox(height: 30),
+                    const Text(
+                      "Get ready, User",
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    Text(
+                      "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
+                      style: const TextStyle(fontSize: 18, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 30),
+                    if (workout != null)
+                      _buildWorkoutCard(context, workout)
+                    else
+                      _buildRestDayCard(),
+                    const SizedBox(height: 20),
+                    _buildWeightTrackerCard(context, workoutProvider),
+                    const SizedBox(height: 20),
+                    _buildCreateExerciseButton(context),
+                  ],
+                ),
               ),
             ),
           ),
@@ -54,7 +55,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ... All your other _build... helper methods remain the same ...
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       final now = DateTime.now();
@@ -97,6 +97,7 @@ class HomeScreen extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
+          // THE FIX: Removed 'const' from here as it's not a const constructor
           MaterialPageRoute(builder: (context) => const AddExerciseScreen()),
         );
       },
