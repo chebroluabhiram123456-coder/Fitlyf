@@ -12,7 +12,6 @@ class WeeklyPlanScreen extends StatelessWidget {
       builder: (context, workoutProvider, child) {
         final weeklyPlan = workoutProvider.weeklyPlan;
         final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
         return Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -34,7 +33,6 @@ class WeeklyPlanScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final day = days[index];
                 final muscleGroups = weeklyPlan[day] ?? ['Rest'];
-                
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 15.0),
                   child: FrostedGlassCard(
@@ -53,9 +51,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit, color: Colors.white70),
-                          onPressed: () {
-                            _showEditPlanDialog(context, workoutProvider, day);
-                          },
+                          onPressed: () => _showEditPlanDialog(context, workoutProvider, day),
                         ),
                       ],
                     ),
@@ -72,7 +68,6 @@ class WeeklyPlanScreen extends StatelessWidget {
   void _showEditPlanDialog(BuildContext context, WorkoutProvider provider, String day) {
     List<String> selectedMuscles = List.from(provider.weeklyPlan[day] ?? []);
     final availableMuscles = provider.availableMuscleGroups;
-
     showDialog(
       context: context,
       builder: (context) {
@@ -112,7 +107,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    if (selectedMuscles.isEmpty) { selectedMuscles.add('Rest'); }
+                    if (selectedMuscles.isEmpty) selectedMuscles.add('Rest');
                     provider.updateWeeklyPlan(day, selectedMuscles);
                     Navigator.pop(context);
                   },
