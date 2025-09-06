@@ -28,7 +28,7 @@ class WorkoutProvider with ChangeNotifier {
       ],
     ),
   ];
-
+  
   final List<Exercise> _customExercises = [];
 
   Map<String, String> _weeklyPlan = {
@@ -75,19 +75,23 @@ class WorkoutProvider with ChangeNotifier {
   }
 
   // Methods
+  // THE FIX: Update this function to accept image and video URLs
   void addCustomExercise({
     required String name,
     required String targetMuscle,
     required int sets,
     required int reps,
+    String? imageUrl,
+    String? videoUrl,
   }) {
     final newExercise = Exercise(
-      // THE FIX: Corrected the typo in the function name.
       id: 'custom_${DateTime.now().toIso8601String()}',
       name: name,
       targetMuscle: targetMuscle,
       sets: sets,
       reps: reps,
+      imageUrl: imageUrl, // Save the image path
+      videoUrl: videoUrl, // Save the video path
     );
     _customExercises.add(newExercise);
     notifyListeners();
