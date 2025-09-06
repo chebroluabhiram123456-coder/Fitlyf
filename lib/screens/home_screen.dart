@@ -1,4 +1,3 @@
-// THE FIX 1: Add all the missing import statements.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -21,7 +20,8 @@ class HomeScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            // THE FIX 2: The SingleChildScrollView is back to prevent all overflow errors.
+            // THE FIX: The SingleChildScrollView is correctly wrapping the
+            // content column to prevent any overflow errors on any screen size.
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- All helper methods are correct and unchanged ---
+  // --- All other helper methods are correct and unchanged ---
   
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
@@ -128,7 +128,7 @@ class HomeScreen extends StatelessWidget {
           final date = dates[index];
           final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
           return _dateChip(
-            context, // Pass context here
+            context,
             day: DateFormat('E').format(date),
             date: DateFormat('d').format(date),
             isActive: isActive,
