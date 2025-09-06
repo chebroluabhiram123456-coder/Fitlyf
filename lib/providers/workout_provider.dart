@@ -1,5 +1,4 @@
-// THE FIX 1: Add all missing import statements.
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
@@ -7,7 +6,6 @@ import '../models/set_log_model.dart';
 
 enum WorkoutStatus { Completed, Skipped, Scheduled, Rest, Future }
 
-// THE FIX 2: Add 'with ChangeNotifier' to the class definition.
 class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
   String _userName = "User";
@@ -15,20 +13,15 @@ class WorkoutProvider with ChangeNotifier {
   final Map<DateTime, double> _weightHistory = {};
   final Map<DateTime, Workout> _workoutLog = {};
   final List<Exercise> _customExercises = [];
-
   final List<Workout> _workouts = [
-    Workout(
-      id: 'w1', name: 'Full Body A', exercises: [
-        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8, description: 'An upper-body strength exercise that targets the pectoral muscles, deltoids, and triceps.'),
-        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10, description: 'A powerful overhead press variation that utilizes leg drive to lift heavier weights.'),
-      ]
-    ),
-    Workout(
-      id: 'w2', name: 'Full Body B', exercises: [
-        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5, description: 'A fundamental lower-body exercise that strengthens the quadriceps, hamstrings, and glutes.'),
-        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5, description: 'A compound lift that works the entire posterior chain, including the back, glutes, and hamstrings.'),
-      ]
-    ),
+    Workout( id: 'w1', name: 'Full Body A', exercises: [
+        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
+        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
+    ]),
+    Workout( id: 'w2', name: 'Full Body B', exercises: [
+        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5),
+        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5),
+    ]),
   ];
   
   Map<String, List<String>> _weeklyPlan = {
@@ -41,6 +34,37 @@ class WorkoutProvider with ChangeNotifier {
   ];
 
   // --- Getters ---
+  
+  // This calculates your completed workouts for the current week.
+  int get weeklyStreakCount {
+    final today = DateTime.now();
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    int streak = 0;
+    for (int i = 0; i < today.weekday; i++) {
+      final day = DateUtils.dateOnly(startOfWeek.add(Duration(days: i)));
+      if (_workoutLog.containsKey(day)) {
+        streak++;
+      }
+    }
+    return streak;
+  }
+  
+  // This calculates the total number of planned workout days.
+  int get weeklyWorkoutDaysCount {
+    return _weeklyPlan.values.where((plan) => !plan.contains('Rest')).length;
+  }
+
+  // This provides the dynamic motivational message.
+  String get streakMessage {
+    final streak = weeklyStreakCount;
+    if (streak <= 0) return "Let's start the week strong!";
+    if (streak <= 2) return "Great start!";
+    if (streak == 3) return "Good progress!";
+    if (streak == 4) return "Fantastic progress!";
+    return "Amazing, keep it up!";
+  }
+
+  // ... other getters are unchanged ...
   String get userName => _userName;
   String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
@@ -49,39 +73,15 @@ class WorkoutProvider with ChangeNotifier {
   Map<DateTime, Workout> get workoutLog => _workoutLog;
   Map<String, double> get personalBests => {};
   Map<String, bool> get achievements => {'first_workout': false};
-
-  double get latestWeight {
-    if (_weightHistory.isEmpty) return 0.0;
-    final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a));
-    return _weightHistory[sortedDates.first]!;
-  }
+  double get latestWeight { if (_weightHistory.isEmpty) return 0.0; final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a)); return _weightHistory[sortedDates.first]!; }
+  double? get weightForSelectedDate { final entry = _weightHistory.entries.firstWhere((e) => DateUtils.isSameDay(e.key, _selectedDate), orElse: () => MapEntry(DateTime(0), -1.0)); return entry.value == -1.0 ? null : entry.value; }
+  Workout? get selectedWorkout { final dayName = DateFormat('EEEE').format(_selectedDate); final targetMuscles = _weeklyPlan[dayName]; if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null; final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList(); return Workout(id: 'day_${dayName.toLowerCase()}', name: targetMuscles.join(' & '), exercises: exercisesForDay); }
+  Workout? get getTodaysWorkout { final dayName = DateFormat('EEEE').format(DateTime.now()); final targetMuscles = _weeklyPlan[dayName]; if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null; final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList(); return Workout(id: 'today_workout', name: targetMuscles.join(' & '), exercises: exercisesForDay); }
+  List<Exercise> get allExercises { return [..._workouts.expand((workout) => workout.exercises), ..._customExercises]; }
   
-  double? get weightForSelectedDate {
-    final entry = _weightHistory.entries.firstWhere((e) => DateUtils.isSameDay(e.key, _selectedDate), orElse: () => MapEntry(DateTime(0), -1.0));
-    return entry.value == -1.0 ? null : entry.value;
-  }
-
-  Workout? get selectedWorkout {
-    final dayName = DateFormat('EEEE').format(_selectedDate);
-    final targetMuscles = _weeklyPlan[dayName];
-    if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
-    final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
-    return Workout(id: 'day_${dayName.toLowerCase()}', name: targetMuscles.join(' & '), exercises: exercisesForDay);
-  }
-  
-  Workout? get getTodaysWorkout {
-    final dayName = DateFormat('EEEE').format(DateTime.now());
-    final targetMuscles = _weeklyPlan[dayName];
-    if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
-    final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
-    return Workout(id: 'today_workout', name: targetMuscles.join(' & '), exercises: exercisesForDay);
-  }
-
-  List<Exercise> get allExercises {
-    return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
-  }
-
   // --- Methods ---
+  
+  // ... All other methods are unchanged and correct ...
   void updateUserName(String newName) { _userName = newName; notifyListeners(); }
   WorkoutStatus getWorkoutStatusForDate(DateTime date) { final today = DateUtils.dateOnly(DateTime.now()); final dateOnly = DateUtils.dateOnly(date); if (dateOnly.isAfter(today)) return WorkoutStatus.Future; if (_workoutLog.containsKey(dateOnly)) return WorkoutStatus.Completed; final dayName = DateFormat('EEEE').format(dateOnly); final plan = _weeklyPlan[dayName]; if (plan == null || plan.contains('Rest')) return WorkoutStatus.Rest; return WorkoutStatus.Skipped; }
   void logWorkout(DateTime date, Workout workout) { _workoutLog[DateUtils.dateOnly(date)] = workout; if (achievements['first_workout'] == false) { achievements['first_workout'] = true; } notifyListeners(); }
