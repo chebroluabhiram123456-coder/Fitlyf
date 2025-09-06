@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
@@ -13,9 +13,9 @@ class WorkoutProvider with ChangeNotifier {
   final Map<DateTime, double> _weightHistory = {};
   final Map<DateTime, Workout> _workoutLog = {};
   final List<Exercise> _customExercises = [];
-  
-  // This temporary Set is crucial for the bug fix
   Set<String> _inProgressExerciseIds = {};
+  final Map<String, double> _personalBests = {}; 
+  final Map<String, bool> _achievements = {'first_workout': false};
 
   final List<Workout> _workouts = [
     Workout( id: 'w1', name: 'Full Body A', exercises: [
@@ -45,11 +45,7 @@ class WorkoutProvider with ChangeNotifier {
   Map<String, List<String>> get weeklyPlan => _weeklyPlan;
   Map<DateTime, Workout> get workoutLog => _workoutLog;
 
-  bool isExerciseInProgressCompleted(String exerciseId) {
-    return _inProgressExerciseIds.contains(exerciseId);
-  }
-  
-  // ... other getters are unchanged ...
+  bool isExerciseInProgressCompleted(String exerciseId) => _inProgressExerciseIds.contains(exerciseId);
   int get weeklyStreakCount { final today = DateTime.now(); final startOfWeek = today.subtract(Duration(days: today.weekday - 1)); int streak = 0; for (int i = 0; i < today.weekday; i++) { final day = DateUtils.dateOnly(startOfWeek.add(Duration(days: i))); if (_workoutLog.containsKey(day)) { streak++; } } return streak; }
   int get weeklyWorkoutDaysCount { return _weeklyPlan.values.where((plan) => !plan.contains('Rest')).length; }
   String get streakMessage { final streak = weeklyStreakCount; if (streak <= 0) return "Let's start the week strong!"; if (streak <= 2) return "Great start!"; if (streak == 3) return "Good progress!"; if (streak == 4) return "Fantastic progress!"; return "Amazing, keep it up!"; }
@@ -58,39 +54,21 @@ class WorkoutProvider with ChangeNotifier {
   Workout? get selectedWorkout { final dayName = DateFormat('EEEE').format(_selectedDate); final targetMuscles = _weeklyPlan[dayName]; if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null; final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList(); return Workout(id: 'day_${dayName.toLowerCase()}', name: targetMuscles.join(' & '), exercises: exercisesForDay); }
   Workout? get getTodaysWorkout { final dayName = DateFormat('EEEE').format(DateTime.now()); final targetMuscles = _weeklyPlan[dayName]; if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null; final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList(); return Workout(id: 'today_workout', name: targetMuscles.join(' & '), exercises: exercisesForDay); }
   List<Exercise> get allExercises { return [..._workouts.expand((workout) => workout.exercises), ..._customExercises]; }
-  
+
   // --- Methods ---
   
-  void startWorkoutSession() { _inProgressExerciseIds.clear(); notifyListeners(); }
-
-  void toggleInProgressExerciseCompletion(String exerciseId, bool isCompleted) {
-    if (isCompleted) { _inProgressExerciseIds.add(exerciseId); }
-    else { _inProgressExerciseIds.remove(exerciseId); }
-    notifyListeners();
-  }
-
-  bool areAllExercisesComplete(List<Exercise> exercises) {
-    if (exercises.isEmpty) return false;
-    final exerciseIds = exercises.map((e) => e.id).toSet();
-    return _inProgressExerciseIds.containsAll(exerciseIds);
-  }
-
-  void logWorkout(DateTime date, Workout workout) {
-    final loggedWorkout = Workout(
-      id: workout.id, name: workout.name,
-      exercises: workout.exercises.map((ex) {
-        return Exercise(
-          id: ex.id, name: ex.name, targetMuscle: ex.targetMuscle, sets: ex.sets, reps: ex.reps,
-          description: ex.description, imageUrl: ex.imageUrl, videoUrl: ex.videoUrl,
-          isCompleted: _inProgressExerciseIds.contains(ex.id)
-        );
-      }).toList(),
-    );
-    _workoutLog[DateUtils.dateOnly(date)] = loggedWorkout;
+  // THE FIX: This function is now correctly included.
+  void logSet(String exerciseId, int reps, double weight) {
+    if (weight > (_personalBests[exerciseId] ?? 0)) {
+      _personalBests[exerciseId] = weight;
+    }
     notifyListeners();
   }
   
-  // ... All other methods are unchanged and correct ...
+  void startWorkoutSession() { _inProgressExerciseIds.clear(); notifyListeners(); }
+  void toggleInProgressExerciseCompletion(String exerciseId, bool isCompleted) { if (isCompleted) { _inProgressExerciseIds.add(exerciseId); } else { _inProgressExerciseIds.remove(exerciseId); } notifyListeners(); }
+  bool areAllExercisesComplete(List<Exercise> exercises) { if (exercises.isEmpty) return false; final exerciseIds = exercises.map((e) => e.id).toSet(); return _inProgressExerciseIds.containsAll(exerciseIds); }
+  void logWorkout(DateTime date, Workout workout) { final loggedWorkout = Workout(id: workout.id, name: workout.name, exercises: workout.exercises.map((ex) { return Exercise(id: ex.id, name: ex.name, targetMuscle: ex.targetMuscle, sets: ex.sets, reps: ex.reps, description: ex.description, imageUrl: ex.imageUrl, videoUrl: ex.videoUrl, isCompleted: _inProgressExerciseIds.contains(ex.id)); }).toList()); _workoutLog[DateUtils.dateOnly(date)] = loggedWorkout; if (_achievements['first_workout'] == false) { _achievements['first_workout'] = true; } notifyListeners(); }
   void updateUserName(String newName) { _userName = newName; notifyListeners(); }
   WorkoutStatus getWorkoutStatusForDate(DateTime date) { final today = DateUtils.dateOnly(DateTime.now()); final dateOnly = DateUtils.dateOnly(date); if (dateOnly.isAfter(today)) return WorkoutStatus.Future; if (_workoutLog.containsKey(dateOnly)) return WorkoutStatus.Completed; final dayName = DateFormat('EEEE').format(dateOnly); final plan = _weeklyPlan[dayName]; if (plan == null || plan.contains('Rest')) return WorkoutStatus.Rest; return WorkoutStatus.Skipped; }
   void deleteLoggedWorkout(DateTime date) { _workoutLog.remove(DateUtils.dateOnly(date)); notifyListeners(); }
@@ -102,4 +80,4 @@ class WorkoutProvider with ChangeNotifier {
   void changeSelectedDate(DateTime newDate) { _selectedDate = newDate; notifyListeners(); }
   void updateWeeklyPlan(String day, List<String> muscleGroups) { _weeklyPlan[day] = muscleGroups; notifyListeners(); }
   void updateProfilePicture(String imagePath) { _profileImagePath = imagePath; notifyListeners(); }
-}
+} 
