@@ -33,7 +33,6 @@ class WeeklyPlanScreen extends StatelessWidget {
               itemCount: days.length,
               itemBuilder: (context, index) {
                 final day = days[index];
-                // THE FIX: Get the list of muscles and join them for display.
                 final muscleGroups = weeklyPlan[day] ?? ['Rest'];
                 
                 return Padding(
@@ -56,7 +55,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 5),
                               Text(
-                                muscleGroups.join(' & '), // Shows "Chest & Biceps"
+                                muscleGroups.join(' & '),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   color: Colors.white70,
@@ -83,9 +82,8 @@ class WeeklyPlanScreen extends StatelessWidget {
     );
   }
 
-  // THE FIX: The entire dialog is replaced with a multi-select checkbox list.
+  // This is the correct, multi-select checkbox dialog
   void _showEditPlanDialog(BuildContext context, WorkoutProvider provider, String day) {
-    // Create a temporary copy of the selections to manage state inside the dialog
     List<String> selectedMuscles = List.from(provider.weeklyPlan[day] ?? []);
     final availableMuscles = provider.availableMuscleGroups;
 
@@ -111,15 +109,12 @@ class WeeklyPlanScreen extends StatelessWidget {
                         setDialogState(() {
                           if (value == true) {
                             if (muscle == 'Rest') {
-                              // If 'Rest' is selected, clear everything else
                               selectedMuscles = ['Rest'];
                             } else {
-                              // If any other muscle is selected, remove 'Rest' and add the new one
                               selectedMuscles.remove('Rest');
                               selectedMuscles.add(muscle);
                             }
                           } else {
-                            // If a box is unchecked, just remove it
                             selectedMuscles.remove(muscle);
                           }
                         });
@@ -135,7 +130,6 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    // If nothing is selected, default to Rest
                     if (selectedMuscles.isEmpty) {
                       selectedMuscles.add('Rest');
                     }
