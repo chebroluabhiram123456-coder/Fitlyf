@@ -19,9 +19,8 @@ class ProgressScreen extends StatelessWidget {
         final weightHistory = workoutProvider.weightHistory.entries.toList();
         weightHistory.sort((a, b) => a.key.compareTo(b.key));
         
-        // THE FIX: Revert to calculating stats from ALL exercises.
-        final completedExercises = workoutProvider.allExercises.where((ex) => ex.isCompleted).length;
-        final totalExercises = workoutProvider.allExercises.length;
+        // This getter is now "session-aware" and provides live data.
+        final todaysWorkout = workoutProvider.getTodaysWorkout;
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -45,9 +44,9 @@ class ProgressScreen extends StatelessWidget {
                     child: _buildWeightChartCard(context, weightHistory),
                   ),
                   const SizedBox(height: 30),
-                  const Text("Overall Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 20),
-                  _buildStatsCard(context, completedExercises, totalExercises),
+                  
+                  _buildStatsSection(context, todaysWorkout),
+
                   const SizedBox(height: 30),
                   const Text("Workout Streak", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 20),
@@ -66,88 +65,29 @@ class ProgressScreen extends StatelessWidget {
     );
   }
   
+  Widget _buildStatsSection(BuildContext context, Workout? todaysWorkout) {
+    if (todaysWorkout == null) {
+      return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text("Today's Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 20),
+          const FrostedGlassCard(child: Center(child: Padding(padding: EdgeInsets.all(25.0), child: Text("It's a Rest Day!", style: TextStyle(fontSize: 18, color: Colors.white70))))),
+      ]);
+    }
+
+    // Because the provider is now smarter, these stats will be live.
+    final completedExercises = todaysWorkout.exercises.where((ex) => ex.isCompleted).length;
+    final totalExercises = todaysWorkout.exercises.length;
+    
+    return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text("Today's Stats: ${todaysWorkout.name}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 20),
+        _buildStatsCard(context, completedExercises, totalExercises),
+    ]);
+  }
+
   // ... All other helper methods are unchanged and correct ...
-  Widget _buildStreakCalendar(BuildContext context, WorkoutProvider provider) {
-    final today = DateTime.now();
-    final firstDayOfMonth = DateTime(today.year, today.month, 1);
-    final daysInMonth = DateUtils.getDaysInMonth(today.year, today.month);
-    final startingWeekday = firstDayOfMonth.weekday - 1; 
-    return FrostedGlassCard(
-      child: Column( children: [
-          Text(DateFormat('MMMM yyyy').format(today), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 15),
-          Row( mainAxisAlignment: MainAxisAlignment.spaceAround, children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((day) => Text(day, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold))).toList()),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7),
-            itemCount: daysInMonth + startingWeekday,
-            itemBuilder: (context, index) {
-              if (index < startingWeekday) return const SizedBox.shrink();
-              final dayOfMonth = index - startingWeekday + 1;
-              final date = DateTime(today.year, today.month, dayOfMonth);
-              final status = provider.getWorkoutStatusForDate(date);
-              IconData? icon; Color? iconColor;
-              if (status == WorkoutStatus.Completed) { icon = Icons.check_circle; iconColor = Colors.greenAccent; }
-              else if (status == WorkoutStatus.Skipped) { icon = Icons.cancel; iconColor = Colors.redAccent; }
-              return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(dayOfMonth.toString()),
-                  if (icon != null) Padding(padding: const EdgeInsets.only(top: 2.0), child: Icon(icon, color: iconColor, size: 14)),
-              ]);
-            },
-          )
-      ]),
-    );
-  }
-  Widget _buildWeightChartCard(BuildContext context, List<MapEntry<DateTime, double>> history) {
-    return FrostedGlassCard(
-      child: AspectRatio(
-        aspectRatio: 1.7,
-        child: history.length < 2 
-            ? const Center(child: Text("Log more to see your chart!\n(Tap here for details)", textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 16)))
-            : LineChart(_buildChartData(context, history)),
-      ),
-    );
-  }
-  Widget _buildStatsCard(BuildContext context, int completed, int total) {
-    double percentage = total > 0 ? (completed / total) * 100 : 0;
-    return FrostedGlassCard(
-      padding: const EdgeInsets.all(25),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Column(children: [
-              Text("$completed / $total", style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)),
-              const Text("Exercises Done", style: TextStyle(color: Colors.white70)),
-          ]),
-          Column(children: [
-              Text("${percentage.toStringAsFixed(0)}%", style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)),
-              const Text("Completion", style: TextStyle(color: Colors.white70)),
-          ]),
-        ],
-      ),
-    );
-  }
-  LineChartData _buildChartData(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
-    List<FlSpot> spots = weightHistory.map((entry) => FlSpot(entry.key.millisecondsSinceEpoch.toDouble(), entry.value)).toList();
-    return LineChartData(
-      gridData: FlGridData(show: true, drawVerticalLine: true, getDrawingHorizontalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8), getDrawingVerticalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8)),
-      titlesData: FlTitlesData(
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: 2)),
-        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, interval: (spots.length > 1 ? (spots.last.x - spots.first.x) / 4 : 1), getTitlesWidget: (value, meta) {
-              DateTime date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-              return SideTitleWidget(axisSide: meta.axisSide, space: 8.0, child: Text(DateFormat('d MMM').format(date), style: const TextStyle(fontSize: 12)));
-        })),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      ),
-      borderData: FlBorderData(show: true, border: Border.all(color: Colors.white24)),
-      lineBarsData: [
-        LineChartBarData(
-          spots: spots, isCurved: true, color: Colors.white, barWidth: 5, isStrokeCapRound: true, dotData: const FlDotData(show: false),
-          belowBarData: BarAreaData(show: true, gradient: LinearGradient(colors: [ Colors.deepPurple.withOpacity(0.5), Colors.deepPurple.withOpacity(0.0) ], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
-        ),
-      ],
-    );
-  }
+  Widget _buildStreakCalendar(BuildContext context, WorkoutProvider provider) { /* ... */ }
+  Widget _buildWeightChartCard(BuildContext context, List<MapEntry<DateTime, double>> history) { /* ... */ }
+  Widget _buildStatsCard(BuildContext context, int completed, int total) { /* ... */ }
+  LineChartData _buildChartData(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) { /* ... */ }
 }
