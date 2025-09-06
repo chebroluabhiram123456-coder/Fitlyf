@@ -1,4 +1,5 @@
-import 'package/flutter/material.dart';
+// THE FIX: Add the missing import for the Material library.
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
@@ -82,7 +83,6 @@ class WeeklyPlanScreen extends StatelessWidget {
     );
   }
 
-  // This is the correct, multi-select checkbox dialog
   void _showEditPlanDialog(BuildContext context, WorkoutProvider provider, String day) {
     List<String> selectedMuscles = List.from(provider.weeklyPlan[day] ?? []);
     final availableMuscles = provider.availableMuscleGroups;
