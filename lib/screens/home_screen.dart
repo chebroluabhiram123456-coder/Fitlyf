@@ -6,6 +6,7 @@ import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:fitlyf/models/workout_model.dart';
+import 'package:fitlyf/helpers/fade_route.dart'; // <-- IMPORT FADE ROUTE
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -19,8 +20,6 @@ class HomeScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            // THE FIX: Wrap the main content in a SingleChildScrollView.
-            // This makes the screen scrollable if the content is too tall.
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -38,10 +37,26 @@ class HomeScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 18, color: Colors.white70),
                     ),
                     const SizedBox(height: 30),
-                    if (workout != null)
-                      _buildWorkoutCard(context, workout)
-                    else
-                      _buildRestDayCard(),
+
+                    // THE FIX 1: Wrap the changing workout card in an AnimatedSwitcher
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.0, 0.3),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: workout != null
+                          ? _buildWorkoutCard(context, workout)
+                          : _buildRestDayCard(),
+                    ),
                     const SizedBox(height: 20),
                     _buildWeightTrackerCard(context, workoutProvider),
                     const SizedBox(height: 20),
@@ -56,8 +71,68 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- All other helper methods and widgets remain unchanged ---
+  // Helper method for the Create Exercise button
+  Widget _buildCreateExerciseButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // THE FIX 2: Use our new FadePageRoute for navigation
+        Navigator.push(context, FadePageRoute(child: const AddExerciseScreen()));
+      },
+      child: FrostedGlassCard(/* ... unchanged ... */
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        child: const Row(
+          children: [
+            Icon(Icons.add_circle_outline, color: Colors.white, size: 28),
+            SizedBox(width: 15),
+            Text("Create Your Own Exercise", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            Spacer(),
+            Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method for the workout card
+  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
+     return GestureDetector(
+       // Use a unique key to help the AnimatedSwitcher know the content has changed
+       key: ValueKey<String>(workout.id),
+       onTap: () {
+          if (workout.exercises.isNotEmpty) {
+            // THE FIX 3: Use our new FadePageRoute for navigation
+            Navigator.push(context, FadePageRoute(child: WorkoutDetailScreen(workout: workout)));
+          }
+       },
+       child: Hero( /* ... unchanged ... */
+        tag: 'workout_card',
+        child: FrostedGlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(workout.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+              const SizedBox(height: 5),
+              Text("${workout.exercises.length} exercises", style: const TextStyle(fontSize: 16, color: Colors.white70)),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                    child: const Icon(Icons.arrow_forward, color: Colors.white),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
+       ),
+     );
+  }
   
+  // --- All other helper methods (_buildCalendarHeader, _buildWeightTrackerCard, etc.) are unchanged ---
+  // --- Code omitted for brevity ---
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       final now = DateTime.now();
@@ -86,36 +161,11 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildRestDayCard() {
     return const FrostedGlassCard(
+       key: ValueKey<String>('rest_day'),
       child: Center(
         child: Text(
           "It's a Rest Day! 😌",
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCreateExerciseButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AddExerciseScreen()),
-        );
-      },
-      child: FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: const Row(
-          children: [
-            Icon(Icons.add_circle_outline, color: Colors.white, size: 28),
-            SizedBox(width: 15),
-            Text(
-              "Create Your Own Exercise",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            Spacer(),
-            Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
-          ],
         ),
       ),
     );
@@ -219,48 +269,5 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-  
-  Widget _buildWorkoutCard(BuildContext context, Workout workout) {
-     return GestureDetector(
-       onTap: () {
-          if (workout.exercises.isNotEmpty) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutDetailScreen(workout: workout)));
-          }
-       },
-       child: Hero(
-        tag: 'workout_card',
-        child: FrostedGlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                workout.name,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                "${workout.exercises.length} exercises",
-                style: const TextStyle(fontSize: 16, color: Colors.white70),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_forward, color: Colors.white),
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
-       ),
-     );
   }
 }
