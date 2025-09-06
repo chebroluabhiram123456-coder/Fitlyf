@@ -3,20 +3,25 @@ workflows:
     name: Android Build (Free Tier)
     instance_type: mac_mini_m1
     environment:
-      flutter: 3.19.6 # Using a known stable version
+      flutter: 3.19.6 # Using a known stable version for maximum compatibility
       xcode: 15.2
       java: 17
-      # THE FIX (Layer 2): Force the Java Virtual Machine to use more memory
+      # Layer 2: Force the Java Virtual Machine to use more memory at the OS level.
       # This is a powerful override for the entire build environment.
       _JAVA_OPTIONS: "-Xms1g -Xmx4g" 
     scripts:
-      # These scripts are now much cleaner
-      - flutter clean
+      - echo "Setting up environment..."
+      - java -version
+      - flutter --version
+      # Aggressive cleaning steps to prevent caching issues
+      - flutter clean 
       - flutter pub get
+      - cd android && ./gradlew clean && cd ..
+      # Final build command
       - flutter build apk --debug
     artifacts:
       - build/app/outputs/apk/debug/*.apk
     publishing:
       email:
         recipients:
-          - your.email@example.com
+          - your.email@example.com # Remember to change this if you want to receive the file
