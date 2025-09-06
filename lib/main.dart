@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart'; // <-- IMPORT GOOGLE FONTS
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/screens/home_screen.dart';
 import 'package:fitlyf/screens/progress_screen.dart';
 import 'package:fitlyf/screens/weekly_plan_screen.dart';
-import 'package:fitlyf/screens/profile_screen.dart'; // <-- IMPORT THE NEW SCREEN
+import 'package:fitlyf/screens/profile_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,10 +21,14 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'FitLfy',
         theme: ThemeData(
-          brightness: Brightness.dark, 
+          brightness: Brightness.dark,
           primarySwatch: Colors.deepPurple,
           visualDensity: VisualDensity.adaptivePlatformDensity,
-          canvasColor: Colors.transparent, 
+          canvasColor: Colors.transparent,
+          // THE FIX: Set the default text theme for the entire app to Poppins.
+          textTheme: GoogleFonts.poppinsTextTheme(
+            Theme.of(context).textTheme.apply(bodyColor: Colors.white, displayColor: Colors.white),
+          ),
         ),
         home: const MainScreen(),
       ),
@@ -40,12 +45,11 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  // THE FIX 1: Add the ProfileScreen to our list of pages
   static final List<Widget> _widgetOptions = <Widget>[
     const HomeScreen(),
     const ProgressScreen(),
     const WeeklyPlanScreen(),
-    const ProfileScreen(), // <-- NEW SCREEN ADDED HERE
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -74,7 +78,6 @@ class _MainScreenState extends State<MainScreen> {
           elevation: 0,
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white70,
-          // THE FIX 2: Add a new item to the navigation bar for the Profile page
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
@@ -88,15 +91,14 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.calendar_today),
               label: 'Plan',
             ),
-            BottomNavigationBarItem( // <-- NEW ITEM ADDED HERE
+            BottomNavigationBarItem(
               icon: Icon(Icons.person),
               label: 'Profile',
             ),
           ],
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
-          // This ensures the labels are always visible
-          type: BottomNavigationBarType.fixed, 
+          type: BottomNavigationBarType.fixed,
         ),
       ),
     );
