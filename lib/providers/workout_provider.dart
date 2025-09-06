@@ -4,7 +4,6 @@ import '../models/workout_model.dart';
 
 class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
-
   DateTime _selectedDate = DateTime.now();
   Map<DateTime, double> _weightHistory = {
     DateTime.now().subtract(const Duration(days: 3)): 75.0,
@@ -32,7 +31,6 @@ class WorkoutProvider with ChangeNotifier {
   ];
   
   final List<Exercise> _customExercises = [];
-
   Map<String, List<String>> _weeklyPlan = {
     'Monday': ['Chest', 'Biceps'],
     'Tuesday': ['Back', 'Triceps'],
@@ -47,7 +45,6 @@ class WorkoutProvider with ChangeNotifier {
     'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Rest'
   ];
 
-  // Getters
   String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
@@ -72,9 +69,7 @@ class WorkoutProvider with ChangeNotifier {
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
     final targetMuscles = _weeklyPlan[dayName];
 
-    if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) {
-      return null;
-    }
+    if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
 
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
 
@@ -89,12 +84,25 @@ class WorkoutProvider with ChangeNotifier {
     return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
   }
 
-  // Methods
-  // THE FIX 1: New function to delete a custom exercise.
+  // THE FIX 1: This function can now delete ANY exercise.
   void deleteExercise(String exerciseId) {
-    // We only allow deleting exercises from the custom list.
+    // First, try to remove from the custom exercises list.
+    int initialLength = _customExercises.length;
     _customExercises.removeWhere((ex) => ex.id == exerciseId);
-    notifyListeners();
+    if (_customExercises.length < initialLength) {
+      notifyListeners();
+      return;
+    }
+
+    // If not in custom, search and remove from the pre-defined workouts.
+    for (var workout in _workouts) {
+      initialLength = workout.exercises.length;
+      workout.exercises.removeWhere((ex) => ex.id == exerciseId);
+      if (workout.exercises.length < initialLength) {
+        notifyListeners();
+        return;
+      }
+    }
   }
 
   void updateExercise(Exercise updatedExercise) {
