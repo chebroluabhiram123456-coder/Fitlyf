@@ -4,6 +4,8 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
+import 'package:fitlyf/helpers/fade_route.dart'; // <-- IMPORT FADE ROUTE
+import 'package:fitlyf/widgets/animated_list_item.dart'; // <-- IMPORT LIST ANIMATION WIDGET
 
 class ExerciseLibraryScreen extends StatelessWidget {
   const ExerciseLibraryScreen({Key? key}) : super(key: key);
@@ -11,7 +13,7 @@ class ExerciseLibraryScreen extends StatelessWidget {
   void _showDeleteConfirmation(BuildContext context, WorkoutProvider provider, Exercise exercise) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => AlertDialog( /* ... unchanged ... */
         backgroundColor: const Color(0xFF3E246E),
         title: const Text('Confirm Deletion', style: TextStyle(color: Colors.white)),
         content: Text('Are you sure you want to delete "${exercise.name}"? This action cannot be undone.', style: const TextStyle(color: Colors.white70)),
@@ -63,7 +65,7 @@ class ExerciseLibraryScreen extends StatelessWidget {
             }
             final muscleGroups = groupedExercises.keys.toList()..sort();
 
-            if (muscleGroups.isEmpty) {
+            if (muscleGroups.isEmpty) { /* ... unchanged ... */
               return const Center(
                   child: Text(
                 'Your library is empty.\nTap the + button to add an exercise!',
@@ -79,51 +81,38 @@ class ExerciseLibraryScreen extends StatelessWidget {
                 final muscle = muscleGroups[index];
                 final exercises = groupedExercises[muscle]!;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        muscle,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                // THE FIX 4: Wrap the entire section in our new animation widget
+                return AnimatedListItem(
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          muscle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      ...exercises.map((exercise) {
-                        return Padding(
+                        const SizedBox(height: 10),
+                        ...exercises.map((exercise) => Padding(
                           padding: const EdgeInsets.only(bottom: 10.0),
-                          child: FrostedGlassCard(
+                          child: FrostedGlassCard(/* ... unchanged ... */
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                             child: Row(
                               children: [
                                 const Icon(Icons.fitness_center, color: Colors.white70),
                                 const SizedBox(width: 15),
-                                Expanded(
-                                  child: Text(
-                                    exercise.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
+                                Expanded(child: Text(exercise.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 20),
                                   onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => AddExerciseScreen(exerciseToEdit: exercise),
-                                      ),
-                                    );
+                                    Navigator.push(context, FadePageRoute(child: AddExerciseScreen(exerciseToEdit: exercise)));
                                   },
                                 ),
-                                // THE FIX 2: Removed the condition. The delete button now shows for ALL exercises.
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                                   onPressed: () {
@@ -133,9 +122,9 @@ class ExerciseLibraryScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ],
+                        )).toList(),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -144,10 +133,7 @@ class ExerciseLibraryScreen extends StatelessWidget {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddExerciseScreen()),
-            );
+            Navigator.push(context, FadePageRoute(child: const AddExerciseScreen()));
           },
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF2D1458),
