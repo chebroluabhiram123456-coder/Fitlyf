@@ -6,7 +6,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:fitlyf/screens/weight_detail_screen.dart';
 import 'package:fitlyf/helpers/fade_route.dart';
-import 'package:fitlyf/screens/workout_history_screen.dart'; // <-- IMPORT NEW SCREEN
+import 'package:fitlyf/screens/workout_history_screen.dart';
+import 'package:fitlyf/models/workout_model.dart'; // <-- THE FIX: Added missing import
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({Key? key}) : super(key: key);
@@ -45,7 +46,6 @@ class ProgressScreen extends StatelessWidget {
                   const SizedBox(height: 30),
                   const Text("Workout Streak", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 20),
-                  // THE FIX: Make the calendar tappable
                   GestureDetector(
                     onTap: () {
                        Navigator.push(context, FadePageRoute(child: const WorkoutHistoryScreen()));
@@ -61,7 +61,7 @@ class ProgressScreen extends StatelessWidget {
     );
   }
 
-  // ... All other helper methods are unchanged ...
+  // ... All other helper methods are unchanged and correct ...
   Widget _buildStatsSection(BuildContext context, Workout? todaysWorkout) {
     if (todaysWorkout == null) {
       return Column( crossAxisAlignment: CrossAxisAlignment.start, children: [
