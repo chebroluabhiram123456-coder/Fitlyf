@@ -6,55 +6,30 @@ enum WorkoutStatus { Completed, Skipped, Scheduled, Rest, Future }
 
 class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
+  // THE FIX 1: Add a variable for the user's name with a default value.
+  String _userName = "User";
+
   DateTime _selectedDate = DateTime.now();
-  Map<DateTime, double> _weightHistory = {
-    DateTime.now().subtract(const Duration(days: 3)): 75.0,
-    DateTime.now().subtract(const Duration(days: 2)): 75.5,
-    DateTime.now(): 76.0,
-  };
-  
-  final Set<DateTime> _completedWorkoutDates = {
-    DateUtils.dateOnly(DateTime.now().subtract(const Duration(days: 1))),
-  };
-
-  final List<Workout> _workouts = [
-    Workout( id: 'w1', name: 'Full Body A', exercises: [
-        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
-        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
-    ]),
-    Workout( id: 'w2', name: 'Full Body Strength B', exercises: [
-        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5),
-        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5),
-    ]),
-  ];
-  
+  Map<DateTime, double> _weightHistory = { /* ... */ };
+  final Set<DateTime> _completedWorkoutDates = { /* ... */ };
+  final List<Workout> _workouts = [ /* ... */ ];
   final List<Exercise> _customExercises = [];
-  Map<String, List<String>> _weeklyPlan = {
-    'Monday': ['Chest', 'Biceps'],
-    'Tuesday': ['Back', 'Triceps'],
-    'Wednesday': ['Legs', 'Shoulders'],
-    'Thursday': ['Rest'],
-    'Friday': ['Chest', 'Back'],
-    'Saturday': ['Abs'],
-    'Sunday': ['Rest'],
-  };
-
-  final List<String> availableMuscleGroups = [
-    'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Rest'
-  ];
+  Map<String, List<String>> _weeklyPlan = { /* ... */ };
+  final List<String> availableMuscleGroups = [ /* ... */ ];
 
   // --- Getters ---
+  String get userName => _userName; // Getter for the UI to use
   String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
   Map<String, List<String>> get weeklyPlan => _weeklyPlan;
 
+  // ... other getters are unchanged ...
   double get latestWeight {
     if (_weightHistory.isEmpty) return 0.0;
     final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a));
     return _weightHistory[sortedDates.first]!;
   }
-  
   double? get weightForSelectedDate {
     final entry = _weightHistory.entries.firstWhere(
       (entry) => DateUtils.isSameDay(entry.key, _selectedDate),
@@ -62,61 +37,54 @@ class WorkoutProvider with ChangeNotifier {
     );
     return entry.value == -1.0 ? null : entry.value;
   }
-
   Workout? get selectedWorkout {
     final dayOfWeek = _selectedDate.weekday;
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
     final targetMuscles = _weeklyPlan[dayName];
-
     if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
-
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
-
     return Workout(
       id: 'day_${dayName.toLowerCase()}',
       name: targetMuscles.join(' & '),
       exercises: exercisesForDay,
     );
   }
-
   List<Exercise> get allExercises {
     return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
   }
 
   // --- Methods ---
+  
+  // THE FIX 2: New function to update the username.
+  void updateUserName(String newName) {
+    _userName = newName;
+    notifyListeners(); // This is the key to syncing across the app.
+  }
+
+  // ... all other methods are unchanged ...
   WorkoutStatus getWorkoutStatusForDate(DateTime date) {
     final today = DateUtils.dateOnly(DateTime.now());
     final dateOnly = DateUtils.dateOnly(date);
-
     if (dateOnly.isAfter(today)) return WorkoutStatus.Future;
     if (_completedWorkoutDates.contains(dateOnly)) return WorkoutStatus.Completed;
-
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dateOnly.weekday - 1];
     final plan = _weeklyPlan[dayName];
     if (plan == null || plan.contains('Rest')) return WorkoutStatus.Rest;
-    
     return WorkoutStatus.Skipped;
   }
-  
   void markWorkoutAsComplete(DateTime date) {
     _completedWorkoutDates.add(DateUtils.dateOnly(date));
     notifyListeners();
   }
-  
-  // THE FIX: New function to mark all exercises in a workout as done.
   void markAllExercisesAsComplete(List<Exercise> exercises) {
     for (var exercise in exercises) {
-      // Find the master copy of the exercise in our main list and update it
       try {
         final masterExercise = allExercises.firstWhere((e) => e.id == exercise.id);
         masterExercise.isCompleted = true;
-      } catch (e) {
-        // Exercise might have been deleted, ignore.
-      }
+      } catch (e) { /* Ignore */ }
     }
     notifyListeners();
   }
-
   void deleteExercise(String exerciseId) {
     _customExercises.removeWhere((ex) => ex.id == exerciseId);
     for (var workout in _workouts) {
@@ -124,7 +92,6 @@ class WorkoutProvider with ChangeNotifier {
     }
     notifyListeners();
   }
-
   void updateExercise(Exercise updatedExercise) {
     int index = _customExercises.indexWhere((ex) => ex.id == updatedExercise.id);
     if (index != -1) {
@@ -141,7 +108,6 @@ class WorkoutProvider with ChangeNotifier {
       }
     }
   }
-  
   void addCustomExercise({ required String name, required String targetMuscle, required int sets, required int reps, String? imageUrl, String? videoUrl }) {
     final newExercise = Exercise(
       id: 'custom_${DateTime.now().toIso8601String()}', name: name, targetMuscle: targetMuscle, sets: sets, reps: reps, imageUrl: imageUrl, videoUrl: videoUrl,
@@ -149,29 +115,24 @@ class WorkoutProvider with ChangeNotifier {
     _customExercises.add(newExercise);
     notifyListeners();
   }
-  
   void logUserWeight(double weight) {
     _weightHistory.removeWhere((key, value) => DateUtils.isSameDay(key, _selectedDate));
     _weightHistory[_selectedDate] = weight;
     notifyListeners();
   }
-
   void changeSelectedDate(DateTime newDate) {
     _selectedDate = newDate;
     notifyListeners();
   }
-  
   void updateWeeklyPlan(String day, List<String> muscleGroups) {
     _weeklyPlan[day] = muscleGroups;
     notifyListeners();
   }
-
   void toggleExerciseCompletion(String exerciseId, bool isCompleted) {
     final exercise = allExercises.firstWhere((ex) => ex.id == exerciseId);
     exercise.isCompleted = isCompleted;
     notifyListeners();
   }
-  
   void updateProfilePicture(String imagePath) {
     _profileImagePath = imagePath;
     notifyListeners();
