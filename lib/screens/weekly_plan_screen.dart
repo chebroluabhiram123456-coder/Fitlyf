@@ -8,7 +8,6 @@ class WeeklyPlanScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We use Consumer here so the UI rebuilds when the plan changes
     return Consumer<WorkoutProvider>(
       builder: (context, workoutProvider, child) {
         final weeklyPlan = workoutProvider.weeklyPlan;
@@ -36,14 +35,8 @@ class WeeklyPlanScreen extends StatelessWidget {
                 final day = days[index];
                 final workoutId = weeklyPlan[day] ?? 'Rest';
                 
-                String workoutDescription;
-                if (workoutId == 'w1') {
-                  workoutDescription = 'Full Body A';
-                } else if (workoutId == 'w2') {
-                  workoutDescription = 'Full Body B';
-                } else {
-                  workoutDescription = workoutId;
-                }
+                // THE FIX: Call our new function to get the muscle description
+                final workoutDescription = workoutProvider.getMusclesForWorkout(workoutId);
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 15.0),
@@ -63,6 +56,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 5),
+                            // Display the new, descriptive text
                             Text(
                               workoutDescription,
                               style: const TextStyle(
@@ -97,7 +91,7 @@ class WeeklyPlanScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder( // Use StatefulBuilder to update the dialog's UI
+        return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
               backgroundColor: const Color(0xFF3E246E),
@@ -107,6 +101,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                 isExpanded: true,
                 dropdownColor: const Color(0xFF3E246E),
                 style: const TextStyle(color: Colors.white, fontSize: 16),
+                // The options in the dialog are still the workout groups, which is correct
                 items: const [
                   DropdownMenuItem(value: 'w1', child: Text('Full Body A')),
                   DropdownMenuItem(value: 'w2', child: Text('Full Body B')),
@@ -115,7 +110,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ],
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    setDialogState(() { // Update the state within the dialog
+                    setDialogState(() {
                       selectedWorkoutId = newValue;
                     });
                   }
@@ -128,10 +123,9 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    // This is where the magic happens!
-                    // We call the provider to update the plan.
+                    // This function call is what syncs the change to the home screen
                     provider.updateWeeklyPlan(day, selectedWorkoutId);
-                    Navigator.pop(context); // This will cause the home screen to update.
+                    Navigator.pop(context);
                   },
                   child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
