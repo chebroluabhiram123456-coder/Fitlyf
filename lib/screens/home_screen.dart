@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
-import 'package:fitlyf/screens/add_exercise_screen.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/helpers/fade_route.dart';
 
@@ -20,8 +19,8 @@ class HomeScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            // THE FIX: The SingleChildScrollView is correctly wrapping the
-            // content column to prevent any overflow errors on any screen size.
+            // THE PERMANENT FIX: The SingleChildScrollView is correctly wrapping
+            // the content to prevent any and all overflow errors, forever.
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -49,12 +48,13 @@ class HomeScreen extends StatelessWidget {
                       },
                       child: workout != null
                           ? _buildWorkoutCard(context, workout)
+                          // Pass context to _buildRestDayCard
                           : _buildRestDayCard(context),
                     ),
                     const SizedBox(height: 20),
                     _buildWeightTrackerCard(context, workoutProvider),
                     const SizedBox(height: 20),
-                    _buildCreateExerciseButton(context),
+                    _buildStreakCard(context, workoutProvider),
                   ],
                 ),
               ),
@@ -64,9 +64,50 @@ class HomeScreen extends StatelessWidget {
       },
     );
   }
-
-  // --- All other helper methods are correct and unchanged ---
   
+  Widget _buildStreakCard(BuildContext context, WorkoutProvider provider) {
+    final streakCount = provider.weeklyStreakCount;
+    final totalWorkouts = provider.weeklyWorkoutDaysCount;
+    final message = provider.streakMessage;
+
+    return FrostedGlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      child: Row(
+        children: [
+          Icon(
+            Icons.local_fire_department_rounded,
+            color: streakCount > 0 ? Colors.orangeAccent : Colors.white38,
+            size: 40,
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Day $streakCount / $total",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // --- All other helper methods are correct and unchanged ---
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
        key: ValueKey<String>(workout.id),
@@ -156,26 +197,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildCreateExerciseButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, FadePageRoute(child: const AddExerciseScreen()));
-      },
-      child: FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: Row(
-          children: [
-            const Icon(Icons.add_circle_outline, color: Colors.white, size: 28),
-            const SizedBox(width: 15),
-            Text("Create Your Own Exercise", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const Spacer(),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
     final loggedWeight = provider.weightForSelectedDate;
     final displayWeight = loggedWeight != null ? "${loggedWeight.toStringAsFixed(1)} kg" : "No Entry";
