@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fitlyf/models/exercise_model.dart';
-import 'package:video_player/video_player.dart'; // We'll need to add this dependency
+import 'package:video_player/video_player.dart';
+import 'package:fitlyf/widgets/frosted_glass_card.dart';
 
 class ExerciseDetailScreen extends StatefulWidget {
   final Exercise exercise;
@@ -20,7 +21,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     if (widget.exercise.videoUrl != null && widget.exercise.videoUrl!.isNotEmpty) {
       _videoController = VideoPlayerController.file(File(widget.exercise.videoUrl!))
         ..initialize().then((_) {
-          setState(() {}); // Update UI when video is ready
+          if (mounted) setState(() {});
         });
     }
   }
@@ -33,81 +34,133 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1A0E38), // A solid dark background
-      appBar: AppBar(
-        title: Text(widget.exercise.name),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Display Image if available
-            if (widget.exercise.imageUrl != null && widget.exercise.imageUrl!.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.file(
-                  File(widget.exercise.imageUrl!),
-                  height: 250,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            if (widget.exercise.imageUrl == null)
-              Container(
-                height: 250,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: const Icon(Icons.image_not_supported, color: Colors.white38, size: 60),
-              ),
-            
-            const SizedBox(height: 20),
-            Text(
-              '${widget.exercise.sets} sets x ${widget.exercise.reps} reps',
-              style: const TextStyle(fontSize: 18, color: Colors.white70),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Target Muscle: ${widget.exercise.targetMuscle}',
-              style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            
-            // Video Player
-            if (_videoController != null && _videoController!.value.isInitialized) ...[
-              const SizedBox(height: 30),
-              const Text(
-                'Video Tutorial',
-                style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 15),
-              AspectRatio(
-                aspectRatio: _videoController!.value.aspectRatio,
-                child: VideoPlayer(_videoController!),
-              ),
-              Center(
-                child: IconButton(
-                  icon: Icon(
-                    _videoController!.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _videoController!.value.isPlaying ? _videoController!.pause() : _videoController!.play();
-                    });
-                  },
-                ),
-              ),
-            ]
-          ],
+    return Container(
+      // THE FIX 1: Add the gradient background
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // THE FIX 2: Bold Poppins title (inherited from theme)
+              Text(
+                widget.exercise.name,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                widget.exercise.targetMuscle,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white70),
+              ),
+              
+              // THE FIX 3: Description, if it exists
+              if (widget.exercise.description != null && widget.exercise.description!.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text(
+                  widget.exercise.description!,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white70, height: 1.5),
+                ),
+              ],
+              
+              const SizedBox(height: 30),
+              
+              // THE FIX 4: Modern Sets & Reps card
+              _buildSetsAndRepsCard(),
+
+              // THE FIX 5: Media section for image and video
+              _buildMediaSection(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSetsAndRepsCard() {
+    return FrostedGlassCard(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatColumn("Sets", widget.exercise.sets.toString()),
+          Container(height: 50, width: 1, color: Colors.white24),
+          _buildStatColumn("Reps", widget.exercise.reps.toString()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatColumn(String label, String value) {
+    return Column(
+      children: [
+        Text(value, style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(color: Colors.white70)),
+      ],
+    );
+  }
+
+  Widget _buildMediaSection() {
+    bool hasImage = widget.exercise.imageUrl != null && widget.exercise.imageUrl!.isNotEmpty;
+    bool hasVideo = _videoController != null && _videoController!.value.isInitialized;
+
+    if (!hasImage && !hasVideo) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 30),
+        if (hasImage) ...[
+          Text("Image", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 15),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.file(
+              File(widget.exercise.imageUrl!),
+              height: 200, width: double.infinity, fit: BoxFit.cover,
+            ),
+          ),
+        ],
+        if (hasVideo) ...[
+          const SizedBox(height: 30),
+          Text("Video", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 15),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: AspectRatio(
+              aspectRatio: _videoController!.value.aspectRatio,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  VideoPlayer(_videoController!),
+                  IconButton(
+                    icon: Icon(
+                      _videoController!.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                      size: 60, color: Colors.white.withOpacity(0.8),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _videoController!.value.isPlaying ? _videoController!.pause() : _videoController!.play();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
