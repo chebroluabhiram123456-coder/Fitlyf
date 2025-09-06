@@ -5,7 +5,7 @@ import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:fitlyf/models/workout_model.dart'; // IMPORTANT: Using Workout, not WorkoutSession
+import 'package:fitlyf/models/workout_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,7 +13,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final workoutProvider = Provider.of<WorkoutProvider>(context);
-    final workout = workoutProvider.selectedWorkout; // This is now a Workout? object
+    final workout = workoutProvider.selectedWorkout;
 
     return Container(
       decoration: const BoxDecoration(
@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                 _buildCalendarHeader(workoutProvider),
                 const SizedBox(height: 30),
                 const Text(
-                  "Get ready, User", // Changed from "AB" to be more generic
+                  "Get ready, User",
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 Text(
@@ -42,11 +42,10 @@ class HomeScreen extends StatelessWidget {
                   style: const TextStyle(fontSize: 18, color: Colors.white70),
                 ),
                 const SizedBox(height: 30),
-                // THE FIX: Check if workout is null before building card
                 if (workout != null)
                   _buildWorkoutCard(context, workout)
                 else
-                  _buildRestDayCard(), // Show a special card on rest days
+                  _buildRestDayCard(),
                 const SizedBox(height: 20),
                 _buildWeightTrackerCard(context, workoutProvider),
                 const SizedBox(height: 20),
@@ -217,7 +216,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
   
-  // THE FIX: Changed parameter from WorkoutSession to Workout
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
        onTap: () {
@@ -226,7 +224,7 @@ class HomeScreen extends StatelessWidget {
           }
        },
        child: Hero(
-        tag: 'workout_card', // The tag for the animation
+        tag: 'workout_card',
         child: FrostedGlassCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
