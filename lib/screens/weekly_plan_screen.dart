@@ -33,7 +33,8 @@ class WeeklyPlanScreen extends StatelessWidget {
               itemCount: days.length,
               itemBuilder: (context, index) {
                 final day = days[index];
-                final muscleGroup = weeklyPlan[day] ?? 'Rest';
+                // THE FIX: Get the list of muscles and join them for display.
+                final muscleGroups = weeklyPlan[day] ?? ['Rest'];
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 15.0),
@@ -41,29 +42,29 @@ class WeeklyPlanScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
                     child: Row(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              day,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                day,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 5),
-                            // Display the selected muscle group
-                            Text(
-                              muscleGroup,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white70,
+                              const SizedBox(height: 5),
+                              Text(
+                                muscleGroups.join(' & '), // Shows "Chest & Biceps"
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white70,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.edit, color: Colors.white70),
                           onPressed: () {
@@ -82,9 +83,10 @@ class WeeklyPlanScreen extends StatelessWidget {
     );
   }
 
-  // THE FIX: The dialog now shows a list of specific muscle groups.
+  // THE FIX: The entire dialog is replaced with a multi-select checkbox list.
   void _showEditPlanDialog(BuildContext context, WorkoutProvider provider, String day) {
-    String selectedMuscle = provider.weeklyPlan[day] ?? 'Rest';
+    // Create a temporary copy of the selections to manage state inside the dialog
+    List<String> selectedMuscles = List.from(provider.weeklyPlan[day] ?? []);
     final availableMuscles = provider.availableMuscleGroups;
 
     showDialog(
@@ -95,25 +97,36 @@ class WeeklyPlanScreen extends StatelessWidget {
             return AlertDialog(
               backgroundColor: const Color(0xFF3E246E),
               title: Text('Edit Plan for $day', style: const TextStyle(color: Colors.white)),
-              content: DropdownButton<String>(
-                value: selectedMuscle,
-                isExpanded: true,
-                dropdownColor: const Color(0xFF3E246E),
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-                // Build the list of items from the provider
-                items: availableMuscles.map((String muscle) {
-                  return DropdownMenuItem<String>(
-                    value: muscle,
-                    child: Text(muscle),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setDialogState(() {
-                      selectedMuscle = newValue;
-                    });
-                  }
-                },
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: availableMuscles.map((muscle) {
+                    return CheckboxListTile(
+                      title: Text(muscle, style: const TextStyle(color: Colors.white)),
+                      value: selectedMuscles.contains(muscle),
+                      activeColor: Colors.white,
+                      checkColor: const Color(0xFF3E246E),
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            if (muscle == 'Rest') {
+                              // If 'Rest' is selected, clear everything else
+                              selectedMuscles = ['Rest'];
+                            } else {
+                              // If any other muscle is selected, remove 'Rest' and add the new one
+                              selectedMuscles.remove('Rest');
+                              selectedMuscles.add(muscle);
+                            }
+                          } else {
+                            // If a box is unchecked, just remove it
+                            selectedMuscles.remove(muscle);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
               ),
               actions: [
                 TextButton(
@@ -122,7 +135,11 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    provider.updateWeeklyPlan(day, selectedMuscle);
+                    // If nothing is selected, default to Rest
+                    if (selectedMuscles.isEmpty) {
+                      selectedMuscles.add('Rest');
+                    }
+                    provider.updateWeeklyPlan(day, selectedMuscles);
                     Navigator.pop(context);
                   },
                   child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
