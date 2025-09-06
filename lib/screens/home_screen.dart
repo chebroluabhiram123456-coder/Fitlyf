@@ -15,10 +15,12 @@ class HomeScreen extends StatelessWidget {
     return Consumer<WorkoutProvider>(
       builder: (context, workoutProvider, child) {
         final workout = workoutProvider.selectedWorkout;
-        
+
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
+            // THE FIX: Wrap the main content in a SingleChildScrollView.
+            // This makes the screen scrollable if the content is too tall.
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -41,7 +43,7 @@ class HomeScreen extends StatelessWidget {
                     else
                       _buildRestDayCard(),
                     const SizedBox(height: 20),
-                    _buildWeightTrackerCard(context, workoutProvider), // This will now be dynamic
+                    _buildWeightTrackerCard(context, workoutProvider),
                     const SizedBox(height: 20),
                     _buildCreateExerciseButton(context),
                   ],
@@ -54,43 +56,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
-    // THE FIX 2: Use the new getter and handle the case where no weight is logged.
-    final loggedWeight = provider.weightForSelectedDate;
-    final displayWeight = loggedWeight != null ? "${loggedWeight.toStringAsFixed(1)} kg" : "No Entry";
-
-    return GestureDetector(
-      onTap: () => _showLogWeightDialog(context, provider),
-      child: FrostedGlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        child: Row(
-          children: [
-            const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 28),
-            const SizedBox(width: 15),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  // Title is now dynamic based on the selected date
-                  "Weight for ${DateFormat('d MMM').format(provider.selectedDate)}",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                Text(
-                  displayWeight,
-                  style: const TextStyle(fontSize: 14, color: Colors.white70),
-                ),
-              ],
-            ),
-            const Spacer(),
-            const Icon(Icons.add, color: Colors.white, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ... All other helper methods and widgets remain the same ...
-  // ... (Full code omitted for brevity but is unchanged from previous correct version) ...
+  // --- All other helper methods and widgets remain unchanged ---
+  
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       final now = DateTime.now();
@@ -153,6 +120,39 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
+    final loggedWeight = provider.weightForSelectedDate;
+    final displayWeight = loggedWeight != null ? "${loggedWeight.toStringAsFixed(1)} kg" : "No Entry";
+
+    return GestureDetector(
+      onTap: () => _showLogWeightDialog(context, provider),
+      child: FrostedGlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        child: Row(
+          children: [
+            const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 28),
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Weight for ${DateFormat('d MMM').format(provider.selectedDate)}",
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                Text(
+                  displayWeight,
+                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+                ),
+              ],
+            ),
+            const Spacer(),
+            const Icon(Icons.add, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
   
   void _showLogWeightDialog(BuildContext context, WorkoutProvider provider) {
     final TextEditingController controller = TextEditingController(
@@ -164,7 +164,7 @@ class HomeScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF3E246E),
-          title: Text('Log Weight for ${DateFormat('d MMM').format(provider.selectedDate)}', style: TextStyle(color: Colors.white)),
+          title: Text('Log Weight for ${DateFormat('d MMM').format(provider.selectedDate)}', style: const TextStyle(color: Colors.white)),
           content: TextField(
             controller: controller,
             autofocus: true,
