@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package.flutter/material.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
 
@@ -31,18 +31,17 @@ class WorkoutProvider with ChangeNotifier {
   
   final List<Exercise> _customExercises = [];
 
-  // THE FIX 1: The weekly plan now stores muscle groups, not workout IDs.
-  Map<String, String> _weeklyPlan = {
-    'Monday': 'Chest',
-    'Tuesday': 'Back',
-    'Wednesday': 'Legs',
-    'Thursday': 'Rest',
-    'Friday': 'Shoulders',
-    'Saturday': 'Biceps', // You can now be this specific!
-    'Sunday': 'Rest',
+  // THE FIX 1: The weekly plan now stores a LIST of muscle groups for each day.
+  Map<String, List<String>> _weeklyPlan = {
+    'Monday': ['Chest', 'Biceps'],
+    'Tuesday': ['Back', 'Triceps'],
+    'Wednesday': ['Legs', 'Shoulders'],
+    'Thursday': ['Rest'],
+    'Friday': ['Chest', 'Back'],
+    'Saturday': ['Abs'],
+    'Sunday': ['Rest'],
   };
 
-  // THE FIX 2: A definitive list of muscle groups for the dropdown.
   final List<String> availableMuscleGroups = [
     'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Rest'
   ];
@@ -50,7 +49,7 @@ class WorkoutProvider with ChangeNotifier {
   // Getters
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
-  Map<String, String> get weeklyPlan => _weeklyPlan;
+  Map<String, List<String>> get weeklyPlan => _weeklyPlan;
 
   double get latestWeight {
     if (_weightHistory.isEmpty) return 0.0;
@@ -66,29 +65,23 @@ class WorkoutProvider with ChangeNotifier {
     return entry.value == -1.0 ? null : entry.value;
   }
 
-  // THE FIX 3: The selectedWorkout getter is now much smarter.
-  // It builds a workout on-the-fly based on the day's target muscle.
+  // THE FIX 2: The selectedWorkout getter is now smarter.
+  // It builds a workout by combining exercises from ALL selected muscles for the day.
   Workout? get selectedWorkout {
     final dayOfWeek = _selectedDate.weekday;
     final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek - 1];
-    final targetMuscle = _weeklyPlan[dayName];
+    final targetMuscles = _weeklyPlan[dayName];
 
-    if (targetMuscle == null || targetMuscle == 'Rest') {
+    if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) {
       return null;
     }
 
-    // Find all exercises that match the target muscle for the day.
-    final exercisesForDay = allExercises.where((ex) => ex.targetMuscle == targetMuscle).toList();
+    // Find all exercises that match ANY of the target muscles for the day.
+    final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
 
-    if (exercisesForDay.isEmpty) {
-      // Return a workout with an empty list if no exercises exist for that muscle yet
-      return Workout(id: 'day_${dayName.toLowerCase()}', name: '$targetMuscle Day', exercises: []);
-    }
-
-    // Create a new Workout object just for today.
     return Workout(
       id: 'day_${dayName.toLowerCase()}',
-      name: '$targetMuscle Day',
+      name: targetMuscles.join(' & '), // Creates a name like "Chest & Biceps Day"
       exercises: exercisesForDay,
     );
   }
@@ -130,9 +123,9 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  // This function now updates the plan with a muscle group name.
-  void updateWeeklyPlan(String day, String muscleGroup) {
-    _weeklyPlan[day] = muscleGroup;
+  // THE FIX 3: This function now accepts a LIST of muscle groups.
+  void updateWeeklyPlan(String day, List<String> muscleGroups) {
+    _weeklyPlan[day] = muscleGroups;
     notifyListeners();
   }
 
