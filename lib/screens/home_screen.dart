@@ -1,17 +1,18 @@
-import 'package.flutter/material.dart';
-import 'package.provider/provider.dart';
+// THE FIX 1: Add all the missing import statements.
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
-import 'package:intl/intl.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/helpers/fade_route.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  @overriden
+  @override
   Widget build(BuildContext context) {
     return Consumer<WorkoutProvider>(
       builder: (context, workoutProvider, child) {
@@ -20,8 +21,7 @@ class HomeScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            // THE FIX: The SingleChildScrollView is now correctly wrapping
-            // the content to prevent any overflow errors.
+            // THE FIX 2: The SingleChildScrollView is back to prevent all overflow errors.
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -39,7 +39,6 @@ class HomeScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 18, color: Colors.white70),
                     ),
                     const SizedBox(height: 30),
-
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       transitionBuilder: (Widget child, Animation<double> animation) {
@@ -66,8 +65,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // --- All other helper methods are unchanged and correct ---
-  // --- Code omitted for brevity ---
+  // --- All helper methods are correct and unchanged ---
+  
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
        key: ValueKey<String>(workout.id),
@@ -114,6 +113,7 @@ class HomeScreen extends StatelessWidget {
        ),
      );
   }
+
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
     final List<DateTime> dates = List.generate(7, (index) {
       final now = DateTime.now();
@@ -128,6 +128,7 @@ class HomeScreen extends StatelessWidget {
           final date = dates[index];
           final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
           return _dateChip(
+            context, // Pass context here
             day: DateFormat('E').format(date),
             date: DateFormat('d').format(date),
             isActive: isActive,
@@ -139,6 +140,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildRestDayCard(BuildContext context) {
     return FrostedGlassCard(
        key: const ValueKey<String>('rest_day'),
@@ -153,6 +155,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+  
   Widget _buildCreateExerciseButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -172,6 +175,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
     final loggedWeight = provider.weightForSelectedDate;
     final displayWeight = loggedWeight != null ? "${loggedWeight.toStringAsFixed(1)} kg" : "No Entry";
@@ -204,6 +208,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+  
   void _showLogWeightDialog(BuildContext context, WorkoutProvider provider) {
     final TextEditingController controller = TextEditingController(
       text: provider.weightForSelectedDate?.toString() ?? ''
@@ -245,7 +250,8 @@ class HomeScreen extends StatelessWidget {
       },
     );
   }
-  Widget _dateChip({required String day, required String date, required bool isActive, required VoidCallback onTap}) {
+
+  Widget _dateChip(BuildContext context, {required String day, required String date, required bool isActive, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
