@@ -4,7 +4,8 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:fitlyf/screens/weight_detail_screen.dart'; // Import the new screen
+import 'package:fitlyf/screens/weight_detail_screen.dart';
+import 'package:fitlyf/helpers/fade_route.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({Key? key}) : super(key: key);
@@ -16,8 +17,8 @@ class ProgressScreen extends StatelessWidget {
         final weightHistory = workoutProvider.weightHistory.entries.toList();
         weightHistory.sort((a, b) => a.key.compareTo(b.key));
         
-        final completedExercises = workoutProvider.allExercises.where((ex) => ex.isCompleted).length;
-        final totalExercises = workoutProvider.allExercises.length;
+        // THE FIX 2: Get today's specific workout to calculate stats.
+        final todaysWorkout = workoutProvider.getTodaysWorkout;
 
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -34,23 +35,18 @@ class ProgressScreen extends StatelessWidget {
                 children: [
                   const Text("Weight Analytics", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 20),
-                  // THE FIX 1: Make the chart card tappable
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const WeightDetailScreen()),
-                      );
+                      Navigator.push(context, FadePageRoute(child: const WeightDetailScreen()));
                     },
                     child: _buildWeightChartCard(context, weightHistory),
                   ),
                   const SizedBox(height: 30),
-                  const Text("Workout Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 20),
-                  _buildStatsCard(context, completedExercises, totalExercises),
-                  const SizedBox(height: 30),
                   
-                  // THE FIX 2: Add the new streak calendar
+                  // THE FIX 3: Pass today's workout to the stats card.
+                  _buildStatsSection(context, todaysWorkout),
+
+                  const SizedBox(height: 30),
                   const Text("Workout Streak", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 20),
                   _buildStreakCalendar(context, workoutProvider),
@@ -62,13 +58,47 @@ class ProgressScreen extends StatelessWidget {
       },
     );
   }
+  
+  // THE FIX 4: This is a new helper widget to keep the code clean.
+  Widget _buildStatsSection(BuildContext context, Workout? todaysWorkout) {
+    if (todaysWorkout == null) {
+      // If it's a rest day, show a special message.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Today's Stats", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 20),
+          const FrostedGlassCard(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(25.0),
+                child: Text("It's a Rest Day!", style: TextStyle(fontSize: 18, color: Colors.white70)),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
-  // THE FIX 3: New widget for the frosted glass calendar
+    // If it's a workout day, calculate and show the stats.
+    final completedExercises = todaysWorkout.exercises.where((ex) => ex.isCompleted).length;
+    final totalExercises = todaysWorkout.exercises.length;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Today's Stats: ${todaysWorkout.name}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 20),
+        _buildStatsCard(context, completedExercises, totalExercises),
+      ],
+    );
+  }
+
+  // ... All other helper methods (_buildStreakCalendar, _buildWeightChartCard, etc.) are unchanged ...
   Widget _buildStreakCalendar(BuildContext context, WorkoutProvider provider) {
     final today = DateTime.now();
     final firstDayOfMonth = DateTime(today.year, today.month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(today.year, today.month);
-    // weekday returns 1 for Monday, 7 for Sunday. We adjust for 0-indexed list.
     final startingWeekday = firstDayOfMonth.weekday - 1; 
 
     return FrostedGlassCard(
@@ -89,42 +119,24 @@ class ProgressScreen extends StatelessWidget {
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7),
             itemCount: daysInMonth + startingWeekday,
             itemBuilder: (context, index) {
-              if (index < startingWeekday) {
-                return const SizedBox.shrink(); // Empty space for days before the 1st
-              }
+              if (index < startingWeekday) return const SizedBox.shrink();
               final dayOfMonth = index - startingWeekday + 1;
               final date = DateTime(today.year, today.month, dayOfMonth);
               final status = provider.getWorkoutStatusForDate(date);
-
               IconData? icon;
               Color? iconColor;
-              if (status == WorkoutStatus.Completed) {
-                icon = Icons.check_circle;
-                iconColor = Colors.greenAccent;
-              } else if (status == WorkoutStatus.Skipped) {
-                icon = Icons.cancel;
-                iconColor = Colors.redAccent;
-              }
-
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+              if (status == WorkoutStatus.Completed) { icon = Icons.check_circle; iconColor = Colors.greenAccent; }
+              else if (status == WorkoutStatus.Skipped) { icon = Icons.cancel; iconColor = Colors.redAccent; }
+              return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Text(dayOfMonth.toString()),
-                  if (icon != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
-                      child: Icon(icon, color: iconColor, size: 14),
-                    ),
-                ],
-              );
+                  if (icon != null) Padding(padding: const EdgeInsets.only(top: 2.0), child: Icon(icon, color: iconColor, size: 14)),
+              ]);
             },
           )
         ],
       ),
     );
   }
-
-  // ... other helper methods are unchanged ...
   Widget _buildWeightChartCard(BuildContext context, List<MapEntry<DateTime, double>> history) {
     return FrostedGlassCard(
       child: AspectRatio(
@@ -135,7 +147,6 @@ class ProgressScreen extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildStatsCard(BuildContext context, int completed, int total) {
     double percentage = total > 0 ? (completed / total) * 100 : 0;
     return FrostedGlassCard(
@@ -155,26 +166,19 @@ class ProgressScreen extends StatelessWidget {
       ),
     );
   }
-
   LineChartData _buildChartData(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
-    List<FlSpot> spots = weightHistory.asMap().entries.map((entry) {
-      return FlSpot(entry.key.toDouble(), entry.value.value);
-    }).toList();
-    return LineChartData( /* ... chart data is unchanged ... */
+    List<FlSpot> spots = weightHistory.map((entry) => FlSpot(entry.key.millisecondsSinceEpoch.toDouble(), entry.value)).toList();
+    return LineChartData(
       gridData: FlGridData(show: true, drawVerticalLine: true, getDrawingHorizontalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8), getDrawingVerticalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8)),
       titlesData: FlTitlesData(
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: 2, getTitlesWidget: defaultGetTitle)),
-        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, interval: (spots.length / 4).ceil().toDouble(), getTitlesWidget: (value, meta) {
-              int index = value.toInt();
-              if (index >= 0 && index < weightHistory.length) {
-                return SideTitleWidget(axisSide: meta.axisSide, space: 8.0, child: Text(DateFormat('d MMM').format(weightHistory[index].key), style: const TextStyle(fontSize: 12)));
-              }
-              return const Text('');
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: 2)),
+        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30, interval: (spots.length > 1 ? (spots.last.x - spots.first.x) / 4 : 1), getTitlesWidget: (value, meta) {
+              DateTime date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+              return SideTitleWidget(axisSide: meta.axisSide, space: 8.0, child: Text(DateFormat('d MMM').format(date), style: const TextStyle(fontSize: 12)));
         })),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       ),
       borderData: FlBorderData(show: true, border: Border.all(color: Colors.white24)),
-      minX: 0, maxX: (spots.length - 1).toDouble(),
       lineBarsData: [
         LineChartBarData(
           spots: spots, isCurved: true, color: Colors.white, barWidth: 5, isStrokeCapRound: true, dotData: const FlDotData(show: false),
