@@ -4,7 +4,6 @@ import '../models/workout_model.dart';
 
 class WorkoutProvider with ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
-  // More sample data to better test the history
   Map<DateTime, double> _weightHistory = {
     DateTime.now().subtract(const Duration(days: 3)): 75.0,
     DateTime.now().subtract(const Duration(days: 2)): 75.5,
@@ -30,6 +29,9 @@ class WorkoutProvider with ChangeNotifier {
     ),
   ];
 
+  // THE FIX 1: A new list to store user-created exercises.
+  final List<Exercise> _customExercises = [];
+
   Map<String, String> _weeklyPlan = {
     'Monday': 'w1',
     'Tuesday': 'Rest',
@@ -50,15 +52,13 @@ class WorkoutProvider with ChangeNotifier {
     final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a));
     return _weightHistory[sortedDates.first]!;
   }
-
-  // THE FIX 1: New getter to find the weight for the selected date.
+  
   double? get weightForSelectedDate {
-    // We check if any entry in our history has the same day, month, and year.
     final entry = _weightHistory.entries.firstWhere(
       (entry) => DateUtils.isSameDay(entry.key, _selectedDate),
-      orElse: () => const MapEntry(null, -1.0), // Return a dummy entry if not found
+      orElse: () => const MapEntry(null, -1.0),
     );
-    return entry.value == -1.0 ? null : entry.value; // Return null if not found
+    return entry.value == -1.0 ? null : entry.value;
   }
 
   Workout? get selectedWorkout {
@@ -71,13 +71,31 @@ class WorkoutProvider with ChangeNotifier {
     return _workouts.firstWhere((w) => w.id == workoutId);
   }
 
+  // THE FIX 2: allExercises now includes the custom ones too.
   List<Exercise> get allExercises {
-    return _workouts.expand((workout) => workout.exercises).toList();
+    return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
   }
 
   // Methods
+  // THE FIX 3: The new function to save a custom exercise.
+  void addCustomExercise({
+    required String name,
+    required String targetMuscle,
+    required int sets,
+    required int reps,
+  }) {
+    final newExercise = Exercise(
+      id: 'custom_${DateTime.now().toIso8601String()}', // Unique ID
+      name: name,
+      targetMuscle: targetMuscle,
+      sets: sets,
+      reps: reps,
+    );
+    _customExercises.add(newExercise);
+    notifyListeners();
+  }
+  
   void logUserWeight(double weight) {
-    // Remove any existing entry for today before adding the new one
     _weightHistory.removeWhere((key, value) => DateUtils.isSameDay(key, _selectedDate));
     _weightHistory[_selectedDate] = weight;
     notifyListeners();
