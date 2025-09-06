@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
 
+enum WorkoutStatus { Completed, Skipped, Scheduled, Rest, Future }
+
 class WorkoutProvider with ChangeNotifier {
   String? _profileImagePath;
   DateTime _selectedDate = DateTime.now();
@@ -10,24 +12,20 @@ class WorkoutProvider with ChangeNotifier {
     DateTime.now().subtract(const Duration(days: 2)): 75.5,
     DateTime.now(): 76.0,
   };
+  
+  final Set<DateTime> _completedWorkoutDates = {
+    DateUtils.dateOnly(DateTime.now().subtract(const Duration(days: 1))),
+  };
 
   final List<Workout> _workouts = [
-    Workout(
-      id: 'w1',
-      name: 'Full Body A',
-      exercises: [
+    Workout( id: 'w1', name: 'Full Body A', exercises: [
         Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
         Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
-      ],
-    ),
-    Workout(
-      id: 'w2',
-      name: 'Full Body Strength B',
-      exercises: [
+    ]),
+    Workout( id: 'w2', name: 'Full Body Strength B', exercises: [
         Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5),
         Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5),
-      ],
-    ),
+    ]),
   ];
   
   final List<Exercise> _customExercises = [];
@@ -45,6 +43,7 @@ class WorkoutProvider with ChangeNotifier {
     'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Rest'
   ];
 
+  // --- Getters ---
   String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
@@ -84,25 +83,46 @@ class WorkoutProvider with ChangeNotifier {
     return [..._workouts.expand((workout) => workout.exercises), ..._customExercises];
   }
 
-  // THE FIX 1: This function can now delete ANY exercise.
-  void deleteExercise(String exerciseId) {
-    // First, try to remove from the custom exercises list.
-    int initialLength = _customExercises.length;
-    _customExercises.removeWhere((ex) => ex.id == exerciseId);
-    if (_customExercises.length < initialLength) {
-      notifyListeners();
-      return;
-    }
+  // --- Methods ---
+  WorkoutStatus getWorkoutStatusForDate(DateTime date) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final dateOnly = DateUtils.dateOnly(date);
 
-    // If not in custom, search and remove from the pre-defined workouts.
-    for (var workout in _workouts) {
-      initialLength = workout.exercises.length;
-      workout.exercises.removeWhere((ex) => ex.id == exerciseId);
-      if (workout.exercises.length < initialLength) {
-        notifyListeners();
-        return;
+    if (dateOnly.isAfter(today)) return WorkoutStatus.Future;
+    if (_completedWorkoutDates.contains(dateOnly)) return WorkoutStatus.Completed;
+
+    final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dateOnly.weekday - 1];
+    final plan = _weeklyPlan[dayName];
+    if (plan == null || plan.contains('Rest')) return WorkoutStatus.Rest;
+    
+    return WorkoutStatus.Skipped;
+  }
+  
+  void markWorkoutAsComplete(DateTime date) {
+    _completedWorkoutDates.add(DateUtils.dateOnly(date));
+    notifyListeners();
+  }
+  
+  // THE FIX: New function to mark all exercises in a workout as done.
+  void markAllExercisesAsComplete(List<Exercise> exercises) {
+    for (var exercise in exercises) {
+      // Find the master copy of the exercise in our main list and update it
+      try {
+        final masterExercise = allExercises.firstWhere((e) => e.id == exercise.id);
+        masterExercise.isCompleted = true;
+      } catch (e) {
+        // Exercise might have been deleted, ignore.
       }
     }
+    notifyListeners();
+  }
+
+  void deleteExercise(String exerciseId) {
+    _customExercises.removeWhere((ex) => ex.id == exerciseId);
+    for (var workout in _workouts) {
+      workout.exercises.removeWhere((ex) => ex.id == exerciseId);
+    }
+    notifyListeners();
   }
 
   void updateExercise(Exercise updatedExercise) {
@@ -122,22 +142,9 @@ class WorkoutProvider with ChangeNotifier {
     }
   }
   
-  void addCustomExercise({
-    required String name,
-    required String targetMuscle,
-    required int sets,
-    required int reps,
-    String? imageUrl,
-    String? videoUrl,
-  }) {
+  void addCustomExercise({ required String name, required String targetMuscle, required int sets, required int reps, String? imageUrl, String? videoUrl }) {
     final newExercise = Exercise(
-      id: 'custom_${DateTime.now().toIso8601String()}',
-      name: name,
-      targetMuscle: targetMuscle,
-      sets: sets,
-      reps: reps,
-      imageUrl: imageUrl,
-      videoUrl: videoUrl,
+      id: 'custom_${DateTime.now().toIso8601String()}', name: name, targetMuscle: targetMuscle, sets: sets, reps: reps, imageUrl: imageUrl, videoUrl: videoUrl,
     );
     _customExercises.add(newExercise);
     notifyListeners();
