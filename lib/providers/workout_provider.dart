@@ -12,7 +12,6 @@ class WorkoutProvider with ChangeNotifier {
     DateTime.now(): 76.0,
   };
 
-  // Main list of pre-defined workouts
   final List<Workout> _workouts = [
     Workout(
       id: 'w1',
@@ -91,29 +90,27 @@ class WorkoutProvider with ChangeNotifier {
   }
 
   // Methods
-  // THE FIX: New function to handle the drag-and-drop logic.
-  void reorderWorkoutExercises(String workoutId, int oldIndex, int newIndex) {
-    try {
-      // Find the workout we are editing in the main list
-      final workout = _workouts.firstWhere((w) => w.id == workoutId);
-      
-      // Standard reorder logic
-      final item = workout.exercises.removeAt(oldIndex);
-      workout.exercises.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
-      
+  // THE FIX 1: New function to update an existing exercise.
+  void updateExercise(Exercise updatedExercise) {
+    // Find the index of the exercise to update using its unique ID
+    int index = _customExercises.indexWhere((ex) => ex.id == updatedExercise.id);
+    if (index != -1) {
+      _customExercises[index] = updatedExercise;
       notifyListeners();
-    } catch (e) {
-      // This will handle cases where the workout is a dynamically generated one (like from the home screen)
-      // For now, we print an error, but this logic can be expanded.
-      print("Could not reorder exercises for workout ID: $workoutId. It may not be a pre-defined workout.");
+      return; // Exit if found in custom exercises
+    }
+
+    // If not in custom, check the pre-defined workouts
+    for (var workout in _workouts) {
+      index = workout.exercises.indexWhere((ex) => ex.id == updatedExercise.id);
+      if (index != -1) {
+        workout.exercises[index] = updatedExercise;
+        notifyListeners();
+        return;
+      }
     }
   }
-
-  void updateProfilePicture(String imagePath) {
-    _profileImagePath = imagePath;
-    notifyListeners();
-  }
-
+  
   void addCustomExercise({
     required String name,
     required String targetMuscle,
@@ -154,6 +151,11 @@ class WorkoutProvider with ChangeNotifier {
   void toggleExerciseCompletion(String exerciseId, bool isCompleted) {
     final exercise = allExercises.firstWhere((ex) => ex.id == exerciseId);
     exercise.isCompleted = isCompleted;
+    notifyListeners();
+  }
+  
+  void updateProfilePicture(String imagePath) {
+    _profileImagePath = imagePath;
     notifyListeners();
   }
 }
