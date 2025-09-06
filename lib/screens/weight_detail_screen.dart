@@ -1,3 +1,5 @@
+// THE FIX: Added the missing import for the Provider package.
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
@@ -9,11 +11,9 @@ class WeightDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We get the provider once here to pass its data down
     final workoutProvider = Provider.of<WorkoutProvider>(context);
     final weightHistory = workoutProvider.weightHistory.entries.toList();
-    // Sort newest first for the list
-    weightHistory.sort((a, b) => b.key.compareTo(a.key)); 
+    weightHistory.sort((a, b) => b.key.compareTo(a.key));
 
     return Container(
       decoration: const BoxDecoration(
@@ -33,12 +33,10 @@ class WeightDetailScreen extends StatelessWidget {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // The Chart
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: _buildWeightChartCard(context, weightHistory),
             ),
-            // The History Header
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.0),
               child: Text(
@@ -47,7 +45,6 @@ class WeightDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            // The History List
             Expanded(
               child: _buildWeightHistoryList(context, weightHistory),
             ),
@@ -56,8 +53,6 @@ class WeightDetailScreen extends StatelessWidget {
       ),
     );
   }
-
-  // --- Helper widgets moved from the old Progress Screen ---
 
   Widget _buildWeightHistoryList(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
     if (weightHistory.isEmpty) {
@@ -122,11 +117,10 @@ class WeightDetailScreen extends StatelessWidget {
 
   LineChartData _buildChartData(BuildContext context, List<MapEntry<DateTime, double>> weightHistory) {
     List<FlSpot> spots = weightHistory.asMap().entries.map((entry) {
-      return FlSpot(entry.key.toDouble(), entry.value.value);
+      return FlSpot(entry.key.millisecondsSinceEpoch.toDouble(), entry.value.value);
     }).toList();
 
     return LineChartData(
-      // ... Chart configuration remains the same ...
       gridData: FlGridData(
         show: true,
         drawVerticalLine: true,
@@ -134,22 +128,19 @@ class WeightDetailScreen extends StatelessWidget {
         getDrawingVerticalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8),
       ),
       titlesData: FlTitlesData(
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: 2, getTitlesWidget: defaultGetTitle)),
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: 2)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 30,
-            interval: (spots.length / 4).ceil().toDouble(),
+            interval: (spots.length > 1 ? (spots.last.x - spots.first.x) / 4 : 1),
             getTitlesWidget: (value, meta) {
-              int index = value.toInt();
-              if (index >= 0 && index < weightHistory.length) {
-                return SideTitleWidget(
-                  axisSide: meta.axisSide,
-                  space: 8.0,
-                  child: Text(DateFormat('d MMM').format(weightHistory[index].key), style: const TextStyle(fontSize: 12)),
-                );
-              }
-              return const Text('');
+              DateTime date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+              return SideTitleWidget(
+                axisSide: meta.axisSide,
+                space: 8.0,
+                child: Text(DateFormat('d MMM').format(date), style: const TextStyle(fontSize: 12)),
+              );
             },
           ),
         ),
@@ -157,8 +148,6 @@ class WeightDetailScreen extends StatelessWidget {
         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       ),
       borderData: FlBorderData(show: true, border: Border.all(color: Colors.white24)),
-      minX: 0,
-      maxX: (spots.length - 1).toDouble(),
       lineBarsData: [
         LineChartBarData(
           spots: spots,
