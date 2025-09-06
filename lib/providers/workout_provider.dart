@@ -1,10 +1,10 @@
-// THE FIX 1: Added the missing import for Material, which includes DateUtils.
 import 'package:flutter/material.dart';
 import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
 
-// THE FIX 2: Added 'with ChangeNotifier' to give the class its powers.
 class WorkoutProvider with ChangeNotifier {
+  String? _profileImagePath;
+
   DateTime _selectedDate = DateTime.now();
   Map<DateTime, double> _weightHistory = {
     DateTime.now().subtract(const Duration(days: 3)): 75.0,
@@ -48,6 +48,7 @@ class WorkoutProvider with ChangeNotifier {
   ];
 
   // Getters
+  String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
   Map<DateTime, double> get weightHistory => _weightHistory;
   Map<String, List<String>> get weeklyPlan => _weeklyPlan;
@@ -89,6 +90,11 @@ class WorkoutProvider with ChangeNotifier {
   }
 
   // Methods
+  void updateProfilePicture(String imagePath) {
+    _profileImagePath = imagePath;
+    notifyListeners();
+  }
+
   void addCustomExercise({
     required String name,
     required String targetMuscle,
