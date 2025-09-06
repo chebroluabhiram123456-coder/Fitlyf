@@ -33,8 +33,10 @@ class WeeklyPlanScreen extends StatelessWidget {
               itemCount: days.length,
               itemBuilder: (context, index) {
                 final day = days[index];
-                final muscleGroups = weeklyPlan[day] ?? ['Rest'];
-                
+                final workoutId = weeklyPlan[day] ?? 'Rest';
+                // THE FIX 1: Use the restored helper function for the description.
+                final workoutDescription = workoutProvider.getMusclesForWorkout(workoutId);
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 15.0),
                   child: FrostedGlassCard(
@@ -45,22 +47,9 @@ class WeeklyPlanScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                day,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              Text(day, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                               const SizedBox(height: 5),
-                              Text(
-                                muscleGroups.join(' & '),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white70,
-                                ),
-                              ),
+                              Text(workoutDescription, style: const TextStyle(fontSize: 16, color: Colors.white70)),
                             ],
                           ),
                         ),
@@ -82,10 +71,9 @@ class WeeklyPlanScreen extends StatelessWidget {
     );
   }
 
-  // This is the correct, multi-select checkbox dialog
+  // THE FIX 2: Revert the dialog to the simple and reliable DropdownButton.
   void _showEditPlanDialog(BuildContext context, WorkoutProvider provider, String day) {
-    List<String> selectedMuscles = List.from(provider.weeklyPlan[day] ?? []);
-    final availableMuscles = provider.availableMuscleGroups;
+    String selectedWorkoutId = provider.weeklyPlan[day] ?? 'Rest';
 
     showDialog(
       context: context,
@@ -95,33 +83,24 @@ class WeeklyPlanScreen extends StatelessWidget {
             return AlertDialog(
               backgroundColor: const Color(0xFF3E246E),
               title: Text('Edit Plan for $day', style: const TextStyle(color: Colors.white)),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: availableMuscles.map((muscle) {
-                    return CheckboxListTile(
-                      title: Text(muscle, style: const TextStyle(color: Colors.white)),
-                      value: selectedMuscles.contains(muscle),
-                      activeColor: Colors.white,
-                      checkColor: const Color(0xFF3E246E),
-                      onChanged: (bool? value) {
-                        setDialogState(() {
-                          if (value == true) {
-                            if (muscle == 'Rest') {
-                              selectedMuscles = ['Rest'];
-                            } else {
-                              selectedMuscles.remove('Rest');
-                              selectedMuscles.add(muscle);
-                            }
-                          } else {
-                            selectedMuscles.remove(muscle);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
+              content: DropdownButton<String>(
+                value: selectedWorkoutId,
+                isExpanded: true,
+                dropdownColor: const Color(0xFF3E246E),
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                items: const [
+                  DropdownMenuItem(value: 'w1', child: Text('Full Body A')),
+                  DropdownMenuItem(value: 'w2', child: Text('Full Body B')),
+                  DropdownMenuItem(value: 'Cardio', child: Text('Cardio')),
+                  DropdownMenuItem(value: 'Rest', child: Text('Rest')),
+                ],
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setDialogState(() {
+                      selectedWorkoutId = newValue;
+                    });
+                  }
+                },
               ),
               actions: [
                 TextButton(
@@ -130,10 +109,7 @@ class WeeklyPlanScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    if (selectedMuscles.isEmpty) {
-                      selectedMuscles.add('Rest');
-                    }
-                    provider.updateWeeklyPlan(day, selectedMuscles);
+                    provider.updateWeeklyPlan(day, selectedWorkoutId);
                     Navigator.pop(context);
                   },
                   child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
