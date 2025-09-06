@@ -48,12 +48,13 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose(); _descController.dispose();
-    _setsController.dispose(); _repsController.dispose();
+    _nameController.dispose();
+    _descController.dispose();
+    _setsController.dispose();
+    _repsController.dispose();
     super.dispose();
   }
 
-  // THE FIX: Make the picker functions robust with error handling.
   Future<void> _pickMedia(bool isVideo) async {
     try {
       final XFile? pickedFile = isVideo
@@ -67,15 +68,81 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         });
       }
     } catch (e) {
-      // If permissions are denied, this will now show an informative error.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not pick media. Please check app permissions. Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
   
-  void _saveForm() { /* ... Unchanged ... */ }
-  void _showDeleteConfirmation() { /* ... Unchanged ... */ }
+  // THE FIX: This function now provides feedback if validation fails.
+  void _saveForm() {
+    final bool isValid = _formKey.currentState!.validate();
+
+    if (!isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill out all required fields.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return; // Stop the function here
+    }
+
+    final provider = Provider.of<WorkoutProvider>(context, listen: false);
+
+    if (_isEditMode) {
+      final updatedExercise = Exercise(
+        id: widget.exerciseToEdit!.id, name: _nameController.text,
+        description: _descController.text, targetMuscle: _selectedMuscleGroup!,
+        sets: int.parse(_setsController.text), reps: int.parse(_repsController.text),
+        imageUrl: _imageFile?.path, videoUrl: _videoFile?.path,
+        isCompleted: widget.exerciseToEdit!.isCompleted,
+      );
+      provider.updateExercise(updatedExercise);
+    } else {
+      provider.addCustomExercise(
+        name: _nameController.text, description: _descController.text,
+        targetMuscle: _selectedMuscleGroup!, sets: int.parse(_setsController.text),
+        reps: int.parse(_repsController.text), imageUrl: _imageFile?.path, videoUrl: _videoFile?.path,
+      );
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${_nameController.text} has been saved!'), backgroundColor: Colors.green),
+    );
+    
+    Navigator.of(context).pop();
+  }
+
+  void _showDeleteConfirmation() {
+    final provider = Provider.of<WorkoutProvider>(context, listen: false);
+    final exercise = widget.exerciseToEdit!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF3E246E),
+        title: const Text('Confirm Deletion', style: TextStyle(color: Colors.white)),
+        content: Text('Are you sure you want to delete "${exercise.name}"?', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          TextButton(
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+            onPressed: () {
+              provider.deleteExercise(exercise.id);
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${exercise.name} deleted.'), backgroundColor: Colors.red),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,54 +203,9 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
     );
   }
   
-  Widget _buildMediaPicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_imageFile != null) ...[
-          const Text("Image Preview:", style: TextStyle(color: Colors.white70)),
-          const SizedBox(height: 10),
-          ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_imageFile!, height: 150, width: double.infinity, fit: BoxFit.cover)),
-          const SizedBox(height: 20),
-        ],
-        Row(children: [
-            Expanded(child: _buildPickerButton(icon: Icons.image_outlined, label: "Add Image", onTap: () => _pickMedia(false))),
-            const SizedBox(width: 20),
-            Expanded(child: _buildPickerButton(icon: Icons.videocam_outlined, label: "Add Video", onTap: () => _pickMedia(true))),
-        ]),
-        if (_videoFile != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 10.0),
-            child: Text('Video selected: ${_videoFile!.path.split('/').last}', style: const TextStyle(color: Colors.greenAccent), overflow: TextOverflow.ellipsis,),
-          ),
-      ],
-    );
-  }
-
-  // THE FIX: Replaced GestureDetector with a more reliable InkWell for visual feedback.
-  Widget _buildPickerButton({required IconData icon, required String label, required VoidCallback onTap}) {
-    return Material(
-      color: Colors.white.withOpacity(0.2),
-      borderRadius: BorderRadius.circular(15.0),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15.0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20),
-              const SizedBox(width: 8),
-              Text(label),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  
   // ... All other helper methods are unchanged and correct ...
+  Widget _buildMediaPicker() { return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ if (_imageFile != null) ...[ const Text("Image Preview:", style: TextStyle(color: Colors.white70)), const SizedBox(height: 10), ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.file(_imageFile!, height: 150, width: double.infinity, fit: BoxFit.cover)), const SizedBox(height: 20)], Row(children: [ Expanded(child: _buildPickerButton(icon: Icons.image_outlined, label: "Add Image", onTap: () => _pickMedia(false))), const SizedBox(width: 20), Expanded(child: _buildPickerButton(icon: Icons.videocam_outlined, label: "Add Video", onTap: () => _pickMedia(true))) ]), if (_videoFile != null) Padding(padding: const EdgeInsets.only(top: 10.0), child: Text('Video selected: ${_videoFile!.path.split('/').last}', style: const TextStyle(color: Colors.greenAccent), overflow: TextOverflow.ellipsis)) ]); }
+  Widget _buildPickerButton({required IconData icon, required String label, required VoidCallback onTap}) { return Material(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(15.0), child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(15.0), child: Container(padding: const EdgeInsets.symmetric(vertical: 12), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(icon, size: 20), const SizedBox(width: 8), Text(label) ])))); }
   Widget _buildDropdown() { return DropdownButtonFormField<String>(value: _selectedMuscleGroup, decoration: InputDecoration(labelText: 'Target Muscle', labelStyle: const TextStyle(color: Colors.white70), filled: true, fillColor: Colors.white.withOpacity(0.2), border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0), borderSide: BorderSide.none)), dropdownColor: const Color(0xFF3E246E), items: _muscleGroups.map((String muscle) { return DropdownMenuItem<String>(value: muscle, child: Text(muscle)); }).toList(), onChanged: (newValue) { setState(() { _selectedMuscleGroup = newValue; }); }, validator: (value) => value == null ? 'Please select a muscle group' : null); }
   Widget _buildTextFormField({ required TextEditingController controller, required String labelText, required String hintText, TextInputType keyboardType = TextInputType.text, int maxLines = 1, }) { return TextFormField(controller: controller, maxLines: maxLines, decoration: InputDecoration(labelText: labelText, hintText: hintText, labelStyle: const TextStyle(color: Colors.white70), hintStyle: const TextStyle(color: Colors.white38), filled: true, fillColor: Colors.white.withOpacity(0.2), border: OutlineInputBorder(borderRadius: BorderRadius.circular(15.0), borderSide: BorderSide.none)), keyboardType: keyboardType, validator: (value) { if (labelText != 'Description (Optional)' && (value == null || value.isEmpty)) { return 'This field cannot be empty'; } return null; }); }
 }
