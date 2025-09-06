@@ -108,6 +108,7 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
   
+  // ... All other methods are correct ...
   void updateUserName(String newName) { _userName = newName; notifyListeners(); }
   WorkoutStatus getWorkoutStatusForDate(DateTime date) { final today = DateUtils.dateOnly(DateTime.now()); final dateOnly = DateUtils.dateOnly(date); if (dateOnly.isAfter(today)) return WorkoutStatus.Future; if (_workoutLog.containsKey(dateOnly)) return WorkoutStatus.Completed; final dayName = DateFormat('EEEE').format(dateOnly); final plan = _weeklyPlan[dayName]; if (plan == null || plan.contains('Rest')) return WorkoutStatus.Rest; return WorkoutStatus.Skipped; }
   void logWorkout(DateTime date, Workout workout) { _workoutLog[DateUtils.dateOnly(date)] = workout; if (achievements['first_workout'] == false) { achievements['first_workout'] = true; } notifyListeners(); }
