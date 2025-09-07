@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "973461836123",
+    "project_id": "fitlyf-ddfc7",
+    "storage_bucket": "fitlyf-ddfc7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:973461836123:android:22cb79127e8fc27b47ca7e",
+        "android_client_info": {
+          "package_name": "com.example.fitlyf"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUiF4JbV-sstv0WGaMqNkC2HClQhHWcX4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
