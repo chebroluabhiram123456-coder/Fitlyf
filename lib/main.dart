@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart'; // <-- IMPORT GOOGLE FONTS
 import 'package:fitlyf/providers/workout_provider.dart';
-import 'package:fitlyf/screens/home_screen.dart';
-import 'package:fitlyf/screens/progress_screen.dart';
-import 'package:fitlyf/screens/weekly_plan_screen.dart';
-import 'package:fitlyf/screens/profile_screen.dart';
+import 'package:fitlyf/screens/home_screen.dart'; // Or your initial screen
+import 'package:google_fonts/google_fonts.dart'; // <-- IMPORT GOOGLE FONTS
+import 'package:firebase_core/firebase_core.dart'; // Make sure you have this import
 
-void main() {
+void main() async {
+  // These two lines are important for Firebase to work correctly
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  
   runApp(const MyApp());
 }
 
@@ -16,90 +18,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Using ChangeNotifierProvider to make the WorkoutProvider available to the whole app
     return ChangeNotifierProvider(
-      create: (ctx) => WorkoutProvider(),
+      create: (context) => WorkoutProvider(),
       child: MaterialApp(
-        title: 'FitLfy',
+        title: 'Fitlyf',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
-          primarySwatch: Colors.deepPurple,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-          canvasColor: Colors.transparent,
-          // THE FIX: Set the default text theme for the entire app to Poppins.
+          scaffoldBackgroundColor: Colors.black,
+          primaryColor: Colors.greenAccent,
+          
+          // *** THIS APPLIES THE FONT THEME ***
           textTheme: GoogleFonts.poppinsTextTheme(
-            Theme.of(context).textTheme.apply(bodyColor: Colors.white, displayColor: Colors.white),
+            Theme.of(context).textTheme.apply(bodyColor: Colors.white, displayColor: Colors.white)
+          ),
+          
+          colorScheme: const ColorScheme.dark(
+            primary: Colors.greenAccent,
+            secondary: Colors.greenAccent,
           ),
         ),
-        home: const MainScreen(),
-      ),
-    );
-  }
-}
-
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  _MainScreenState createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-  static final List<Widget> _widgetOptions = <Widget>[
-    const HomeScreen(),
-    const ProgressScreen(),
-    const WeeklyPlanScreen(),
-    const ProfileScreen(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(
-          child: _widgetOptions.elementAt(_selectedIndex),
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white70,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.show_chart),
-              label: 'Progress',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'Plan',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-        ),
+        home: const HomeScreen(), // Set your starting screen here
       ),
     );
   }
