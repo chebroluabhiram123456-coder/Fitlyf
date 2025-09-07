@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
-import 'package:fitlyf/models/weight_log_model.dart';
+// *** THIS IS THE ONLY LINE YOU NEED TO ADD ***
+import 'package:fitlyf/models/weight_log_model.dart'; // <-- ADD THIS IMPORT
+// ***********************************************
 import 'package:fitlyf/models/workout_status.dart';
 import 'dart:math';
 
@@ -23,7 +25,6 @@ class WorkoutProvider with ChangeNotifier {
     'Thu': ['Shoulders'],'Fri': ['Full Body'],'Sat': ['Rest'],'Sun': ['Rest'],
   };
   
-  // *** THIS LIST WAS MISSING ***
   final List<String> _availableMuscleGroups = [
     'Full Body', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Abs', 'Rest'
   ];
