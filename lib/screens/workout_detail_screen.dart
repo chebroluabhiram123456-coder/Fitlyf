@@ -23,7 +23,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   void initState() {
     super.initState();
     _orderedExercises = List.from(widget.workout.exercises);
-    // This now calls our new, smarter function
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<WorkoutProvider>(context, listen: false).startWorkoutSession();
     });
@@ -56,7 +55,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
             Expanded(
               child: Consumer<WorkoutProvider>(
                 builder: (context, workoutProvider, child) {
-                  // THE FIX 1: Check if the workout for this day has already been logged.
                   final isWorkoutComplete = workoutProvider.workoutLog.containsKey(DateUtils.dateOnly(workoutProvider.selectedDate));
 
                   return ReorderableListView.builder(
@@ -75,7 +73,6 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               value: workoutProvider.isExerciseInProgressCompleted(exercise.id),
                               activeColor: Colors.white,
                               checkColor: const Color(0xFF2D1458),
-                              // THE FIX 2: Disable the checkbox if the workout is already done.
                               onChanged: isWorkoutComplete ? null : (bool? value) {
                                 if (value != null) {
                                   workoutProvider.toggleInProgressExerciseCompletion(exercise.id, value);
@@ -86,9 +83,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                               },
                             ),
                             title: Text(exercise.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                                '${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}',
-                                style: const TextStyle(color: Colors.white70)),
+                            subtitle: Text('${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}', style: const TextStyle(color: Colors.white70)),
                             trailing: ReorderableDragStartListener(
                               index: index,
                               child: const Icon(Icons.drag_handle, color: Colors.white70),
@@ -119,21 +114,22 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
   }
 
   void _finishWorkout(BuildContext context, WorkoutProvider provider) {
-    provider.logWorkout(provider.selectedDate, widget.workout);
+    final completedWorkout = Workout(id: widget.workout.id, name: widget.workout.name, exercises: _orderedExercises);
+    provider.logWorkout(provider.selectedDate, completedWorkout);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Workout Complete! Great job!"), backgroundColor: Colors.green),
     );
     Navigator.of(context).pop();
   }
   
-  // THE FIX 3: A new helper to decide which buttons to show.
   Widget _buildActionButtons(BuildContext context) {
     final provider = Provider.of<WorkoutProvider>(context);
     final isWorkoutComplete = provider.workoutLog.containsKey(DateUtils.dateOnly(provider.selectedDate));
 
     if (isWorkoutComplete) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(20, 10, 20, 30),
         child: Text(
           "Workout already logged for this day.",
           textAlign: TextAlign.center,
@@ -172,7 +168,7 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
                 backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30), side: BorderSide(color: Colors.white54)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30), side: const BorderSide(color: Colors.white54)),
               ),
               child: const Text('Quick Log'),
             ),
