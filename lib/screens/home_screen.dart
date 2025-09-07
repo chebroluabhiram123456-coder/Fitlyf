@@ -27,14 +27,8 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     _buildCalendarHeader(context, workoutProvider),
                     const SizedBox(height: 30),
-                    Text(
-                      "Get ready, ${workoutProvider.userName}",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
-                      style: const TextStyle(fontSize: 18, color: Colors.white70),
-                    ),
+                    Text("Get ready, ${workoutProvider.userName}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    Text("Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}", style: const TextStyle(fontSize: 18, color: Colors.white70)),
                     const SizedBox(height: 30),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
@@ -132,15 +126,7 @@ class HomeScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final date = dates[index];
           final bool isActive = DateUtils.isSameDay(date, provider.selectedDate);
-          return _dateChip(
-            context,
-            day: DateFormat('E').format(date),
-            date: DateFormat('d').format(date),
-            isActive: isActive,
-            onTap: () {
-              provider.changeSelectedDate(date);
-            },
-          );
+          return _dateChip(context, day: DateFormat('E').format(date), date: DateFormat('d').format(date), isActive: isActive, onTap: () { provider.changeSelectedDate(date); });
         },
       ),
     );
@@ -152,10 +138,7 @@ class HomeScreen extends StatelessWidget {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 40.0),
-          child: Text(
-            "It's a Rest Day! 😌",
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
+          child: Text("It's a Rest Day! 😌", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
         ),
       ),
     );
@@ -164,7 +147,6 @@ class HomeScreen extends StatelessWidget {
   Widget _buildWeightTrackerCard(BuildContext context, WorkoutProvider provider) {
     final loggedWeight = provider.weightForSelectedDate;
     final displayWeight = loggedWeight != null ? "${loggedWeight.toStringAsFixed(1)} kg" : "No Entry";
-
     return GestureDetector(
       onTap: () => _showLogWeightDialog(context, provider),
       child: FrostedGlassCard(
@@ -176,10 +158,7 @@ class HomeScreen extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Weight for ${DateFormat('d MMM').format(provider.selectedDate)}",
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
+                Text("Weight for ${DateFormat('d MMM').format(provider.selectedDate)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                 Text(displayWeight, style: const TextStyle(fontSize: 14, color: Colors.white70)),
               ],
             ),
