@@ -3,9 +3,8 @@ import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/models/weight_log_model.dart';
 import 'package:fitlyf/models/workout_status.dart';
-import 'dart:math'; // For generating a random ID
+import 'dart:math';
 
-// A simple model for our logged workout history
 class LoggedWorkout {
   final DateTime date;
   final String workoutName;
@@ -16,20 +15,19 @@ class LoggedWorkout {
 class WorkoutProvider with ChangeNotifier {
   // --- USER & PROFILE DATA ---
   String _userName = "User";
-  String? _profileImagePath; // To store the path of the profile picture
+  String? _profileImagePath;
 
   // --- WEEKLY PLAN DATA ---
-  // Using a Map to store which muscle group is planned for each day of the week
   final Map<String, List<String>> _weeklyPlan = {
-    'Mon': ['Chest', 'Triceps'],
-    'Tue': ['Back', 'Biceps'],
-    'Wed': ['Legs'],
-    'Thu': ['Shoulders'],
-    'Fri': ['Full Body'],
-    'Sat': ['Rest'],
-    'Sun': ['Rest'],
+    'Mon': ['Chest', 'Triceps'], 'Tue': ['Back', 'Biceps'], 'Wed': ['Legs'],
+    'Thu': ['Shoulders'],'Fri': ['Full Body'],'Sat': ['Rest'],'Sun': ['Rest'],
   };
   
+  // *** THIS LIST WAS MISSING ***
+  final List<String> _availableMuscleGroups = [
+    'Full Body', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Abs', 'Rest'
+  ];
+
   // --- EXERCISE LIBRARY DATA ---
   final List<Exercise> _allExercises = [
     Exercise(id: 'ex1', name: 'Push Ups', targetMuscle: 'Chest', sets: 3, reps: 12),
@@ -46,18 +44,17 @@ class WorkoutProvider with ChangeNotifier {
   final List<WeightLog> _weightLogs = [
       WeightLog(date: DateTime.now().subtract(const Duration(days: 1)), weight: 75.5),
       WeightLog(date: DateTime.now().subtract(const Duration(days: 3)), weight: 76.0),
-      WeightLog(date: DateTime.now().subtract(const Duration(days: 5)), weight: 75.8),
   ];
   final List<LoggedWorkout> _loggedWorkouts = [
     LoggedWorkout(date: DateTime.now().subtract(const Duration(days: 1)), workoutName: "Full Body Burn", status: WorkoutStatus.Completed),
     LoggedWorkout(date: DateTime.now().subtract(const Duration(days: 2)), workoutName: "Leg Day", status: WorkoutStatus.Skipped),
   ];
 
-
   // =========== GETTERS ===========
   String get userName => _userName;
   String? get profileImagePath => _profileImagePath;
   Map<String, List<String>> get weeklyPlan => _weeklyPlan;
+  List<String> get availableMuscleGroups => _availableMuscleGroups;
   List<Exercise> get allExercises => _allExercises;
   List<LoggedWorkout> get workoutLog => _loggedWorkouts;
   List<WeightLog> get weightHistory => _weightLogs;
@@ -73,10 +70,7 @@ class WorkoutProvider with ChangeNotifier {
     } catch (e) { return null; }
   }
 
-
   // =========== METHODS ===========
-
-  // --- Profile & Settings ---
   void updateUserName(String newName) {
     _userName = newName;
     notifyListeners();
@@ -87,13 +81,11 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Weekly Plan ---
   void updateWeeklyPlan(String day, List<String> muscles) {
     _weeklyPlan[day] = muscles;
     notifyListeners();
   }
 
-  // --- Exercise Library ---
   void addCustomExercise(Exercise newExercise) {
     _allExercises.add(newExercise);
     notifyListeners();
@@ -112,7 +104,6 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  // --- Workout History ---
   void deleteLoggedWorkout(DateTime date) {
     _loggedWorkouts.removeWhere((log) => DateUtils.isSameDay(log.date, date));
     notifyListeners();
@@ -124,7 +115,6 @@ class WorkoutProvider with ChangeNotifier {
     } catch (e) { return null; }
   }
 
-  // --- Daily Workout Progress ---
   void toggleExerciseStatus(String exerciseId) {
     if (inProgressExerciseIds.contains(exerciseId)) {
       inProgressExerciseIds.remove(exerciseId);
