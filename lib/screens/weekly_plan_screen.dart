@@ -8,7 +8,6 @@ class WeeklyPlanScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We use a Consumer to get the provider and automatically update the UI on changes
     return Consumer<WorkoutProvider>(
       builder: (context, provider, child) {
         final weeklyPlan = provider.weeklyPlan;
@@ -30,35 +29,27 @@ class WeeklyPlanScreen extends StatelessWidget {
               
               Workout? assignedWorkout;
               if (assignedWorkoutId != null) {
-                // Find the full workout object from the master list using its ID
-                assignedWorkout = allWorkouts.firstWhere(
-                  (w) => w.id == assignedWorkoutId,
-                  orElse: () => null, // Return null if not found (safety)
-                );
+                // *** THIS IS THE LOGIC FIX ***
+                // Using a try-catch block is the safest way to find the workout.
+                try {
+                  assignedWorkout = allWorkouts.firstWhere((w) => w.id == assignedWorkoutId);
+                } catch (e) {
+                  assignedWorkout = null; // If not found, it remains null.
+                }
               }
 
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                leading: Text(
-                  day,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                leading: Text(day, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 title: Text(
                   assignedWorkout?.name ?? 'Rest Day',
-                  style: TextStyle(
-                    color: assignedWorkout != null ? Colors.greenAccent : Colors.white70, 
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(color: assignedWorkout != null ? Colors.greenAccent : Colors.white70, fontSize: 18),
                 ),
                 subtitle: assignedWorkout != null 
-                  ? Text(
-                      '${assignedWorkout.exercises.length} exercises', 
-                      style: const TextStyle(color: Colors.white54)
-                    ) 
+                  ? Text('${assignedWorkout.exercises.length} exercises', style: const TextStyle(color: Colors.white54)) 
                   : null,
                 trailing: const Icon(Icons.edit, color: Colors.white30),
                 onTap: () {
-                  // When tapped, open the workout selection dialog
                   _showWorkoutSelectionDialog(context, provider, day);
                 },
               );
@@ -69,7 +60,6 @@ class WeeklyPlanScreen extends StatelessWidget {
     );
   }
 
-  // This function shows a popup dialog to select a workout for a specific day
   void _showWorkoutSelectionDialog(BuildContext context, WorkoutProvider provider, String day) {
     showDialog(
       context: context,
@@ -81,25 +71,22 @@ class WeeklyPlanScreen extends StatelessWidget {
             width: double.maxFinite,
             child: ListView.builder(
               shrinkWrap: true,
-              itemCount: provider.allWorkouts.length + 1, // +1 for the "Rest Day" option
+              itemCount: provider.allWorkouts.length + 1,
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  // The "Rest Day" option
                   return ListTile(
                     title: const Text('Rest Day', style: TextStyle(color: Colors.white70)),
                     onTap: () {
-                      provider.updateWeeklyPlan(day, null); // Set workout ID to null for rest
+                      provider.updateWeeklyPlan(day, null);
                       Navigator.of(dialogContext).pop();
                     },
                   );
                 }
-
-                // The workout options
                 final workout = provider.allWorkouts[index - 1];
                 return ListTile(
                   title: Text(workout.name, style: const TextStyle(color: Colors.white)),
                   onTap: () {
-                    provider.updateWeeklyPlan(day, workout.id); // Update the plan with the selected workout's ID
+                    provider.updateWeeklyPlan(day, workout.id);
                     Navigator.of(dialogContext).pop();
                   },
                 );
@@ -109,9 +96,7 @@ class WeeklyPlanScreen extends StatelessWidget {
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel', style: TextStyle(color: Colors.white)),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(),
             ),
           ],
         );
