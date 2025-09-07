@@ -5,6 +5,9 @@ plugins {
     id("com.android.application")
     kotlin("android")
     id("dev.flutter.flutter-gradle-plugin")
+
+    // *** 1. ADD THIS LINE FOR FIREBASE ***
+    id("com.google.gms.google-services")
 }
 
 val localProperties = Properties()
@@ -19,7 +22,7 @@ val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 android {
     namespace = "com.example.fitlyf"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973" // <-- ADD THIS LINE
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -40,6 +43,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
+
+        // *** 2. ADD THIS LINE TO PREVENT BUILD ERRORS WITH FIREBASE ***
+        multiDexEnabled = true
     }
 
     buildTypes {
