@@ -5,77 +5,100 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/models/workout_model.dart';
-import 'package:fitlyf/helpers/fade_route.dart';
-import 'package:fitlyf/screens/add_exercise_screen.dart';
+
+// Animation wrapper for a smooth entrance
+class FadeSlideIn extends StatelessWidget {
+  final Widget child;
+  const FadeSlideIn({ super.key, required this.child });
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      builder: (context, double value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(offset: Offset(0, (1 - value) * 30), child: child),
+        );
+      },
+      child: child,
+    );
+  }
+}
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WorkoutProvider>(
-      builder: (context, workoutProvider, child) {
-        final workout = workoutProvider.selectedWorkout;
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          // *** THE FIX IS HERE ***
-          // We remove the SafeArea widget and let the SingleChildScrollView handle the insets.
-          body: SingleChildScrollView(
-            primary: true, // This tells the scroll view to handle the safe area padding automatically.
+    return Container(
+      // 1. THIS CONTAINER RESTORES YOUR BACKGROUND IMAGE
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          // TODO: Replace with your actual background image asset path!
+          image: AssetImage("assets/images/background.png"), 
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Scaffold must be transparent to see the image
+        body: SafeArea( // Use SafeArea here to avoid status bar overlap
+          child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCalendarHeader(context, workoutProvider),
-                  const SizedBox(height: 30),
-                  Text("Get ready, ${workoutProvider.userName}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  Text("Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}", style: const TextStyle(fontSize: 18, color: Colors.white70)),
-                  const SizedBox(height: 30),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    transitionBuilder: (Widget child, Animation<double> animation) {
-                      return SizeTransition(sizeFactor: animation, child: FadeTransition(opacity: animation, child: child));
-                    },
-                    child: workout != null ? _buildWorkoutCard(context, workout) : _buildRestDayCard(context),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildWeightTrackerCard(context, workoutProvider),
-                  const SizedBox(height: 20),
-                  _buildStreakCard(context, workoutProvider),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Consumer<WorkoutProvider>(
+                builder: (context, workoutProvider, child) {
+                  final workout = workoutProvider.workoutForSelectedDate;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      _buildCalendarHeader(context, workoutProvider),
+                      const SizedBox(height: 30),
+                      FadeSlideIn(
+                        child: Text(
+                          "Get ready, ${workoutProvider.userName}",
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                      FadeSlideIn(
+                        child: Text(
+                          "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
+                          style: const TextStyle(fontSize: 18, color: Colors.white70),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 600),
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SizeTransition(
+                              sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: workout != null ? _buildWorkoutCard(context, workout) : _buildRestDayCard(context),
+                      ),
+                      const SizedBox(height: 20),
+                      FadeSlideIn(
+                        child: _buildWeightTrackerCard(context, workoutProvider),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                },
               ),
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStreakCard(BuildContext context, WorkoutProvider provider) {
-    final streakCount = provider.weeklyStreakCount;
-    final totalWorkouts = provider.weeklyWorkoutDaysCount;
-    final message = provider.streakMessage;
-    return FrostedGlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      child: Row(
-        children: [
-          Icon(Icons.local_fire_department_rounded, color: streakCount > 0 ? Colors.orangeAccent : Colors.white38, size: 40),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Day $streakCount / $totalWorkouts", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(message, style: const TextStyle(fontSize: 14, color: Colors.white70)),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
   
+  // All the other _build... methods remain the same as before
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
        key: ValueKey<String>(workout.id),
@@ -92,7 +115,7 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(workout.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                Text(workout.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
                 const SizedBox(height: 5),
                 Text("${workout.exercises.length} exercises", style: const TextStyle(fontSize: 16, color: Colors.white70)),
                 const SizedBox(height: 20),
@@ -115,10 +138,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
-    final List<DateTime> dates = List.generate(7, (index) {
-      final now = DateTime.now();
-      return now.subtract(Duration(days: now.weekday - 1)).add(Duration(days: index));
-    });
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final List<DateTime> dates = List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
+
     return SizedBox(
       height: 70,
       child: ListView.builder(
@@ -135,11 +158,11 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildRestDayCard(BuildContext context) {
     return FrostedGlassCard(
-       key: const ValueKey<String>('rest_day'),
+      key: const ValueKey<String>('rest_day'),
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 40.0),
-          child: Text("It's a Rest Day! 😌", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          child: Text("It's a Rest Day! 😌", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
         ),
       ),
     );
@@ -159,7 +182,7 @@ class HomeScreen extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Weight for ${DateFormat('d MMM').format(provider.selectedDate)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text("Weight for ${DateFormat('d MMM').format(provider.selectedDate)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
                 Text(displayWeight, style: const TextStyle(fontSize: 14, color: Colors.white70)),
               ],
             ),
@@ -209,7 +232,7 @@ class HomeScreen extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
+          color: isActive ? Colors.white : Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(30),
           border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.2)),
         ),
