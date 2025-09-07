@@ -35,7 +35,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // THE FIX 1: Add the gradient background
+      // THE FIX: Add the gradient background
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
@@ -54,7 +54,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // THE FIX 2: Bold Poppins title (inherited from theme)
               Text(
                 widget.exercise.name,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -65,7 +64,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white70),
               ),
               
-              // THE FIX 3: Description, if it exists
               if (widget.exercise.description != null && widget.exercise.description!.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Text(
@@ -75,11 +73,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
               ],
               
               const SizedBox(height: 30),
-              
-              // THE FIX 4: Modern Sets & Reps card
               _buildSetsAndRepsCard(),
-
-              // THE FIX 5: Media section for image and video
               _buildMediaSection(),
             ],
           ),
@@ -121,19 +115,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 30),
-        if (hasImage) ...[
-          Text("Image", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 15),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.file(
-              File(widget.exercise.imageUrl!),
-              height: 200, width: double.infinity, fit: BoxFit.cover,
-            ),
-          ),
-        ],
+        // Smartly choose to show Video first if available, otherwise show Image
         if (hasVideo) ...[
-          const SizedBox(height: 30),
           Text("Video", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
           ClipRRect(
@@ -157,6 +140,16 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ] else if (hasImage) ...[
+          Text("Image", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 15),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.file(
+              File(widget.exercise.imageUrl!),
+              height: 200, width: double.infinity, fit: BoxFit.cover,
             ),
           ),
         ],
