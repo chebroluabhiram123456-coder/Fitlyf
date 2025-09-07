@@ -5,79 +5,115 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/models/workout_model.dart';
-import 'package:fitlyf/helpers/fade_route.dart';
-import 'package:fitlyf/screens/add_exercise_screen.dart';
+
+// A reusable animation wrapper to keep the code clean
+class FadeSlideIn extends StatelessWidget {
+  final Widget child;
+  final Duration duration;
+  final double delay;
+
+  const FadeSlideIn({
+    super.key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 500),
+    this.delay = 0.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (context, double value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 30), // Slide up effect
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WorkoutProvider>(
-      builder: (context, workoutProvider, child) {
-        final workout = workoutProvider.selectedWorkout;
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          // *** THE FIX IS HERE ***
-          // We remove the SafeArea widget and let the SingleChildScrollView handle the insets.
-          body: SingleChildScrollView(
-            primary: true, // This tells the scroll view to handle the safe area padding automatically.
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      // The SingleChildScrollView MUST be the direct body to handle all scrolling and insets
+      body: SingleChildScrollView(
+        primary: true, // This correctly handles safe area insets for scrolling content
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Consumer<WorkoutProvider>(
+            builder: (context, workoutProvider, child) {
+              final workout = workoutProvider.workoutForSelectedDate;
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // FIX 1: Added space above the calendar to push it down
+                  const SizedBox(height: 10), 
+                  
                   _buildCalendarHeader(context, workoutProvider),
                   const SizedBox(height: 30),
-                  Text("Get ready, ${workoutProvider.userName}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  Text("Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}", style: const TextStyle(fontSize: 18, color: Colors.white70)),
+
+                  // Animating the welcome text
+                  FadeSlideIn(
+                    child: Text(
+                      "Get ready, ${workoutProvider.userName}",
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                  FadeSlideIn(
+                    delay: 0.1, // Slight delay for effect
+                    child: Text(
+                      "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
+                      style: const TextStyle(fontSize: 18, color: Colors.white70),
+                    ),
+                  ),
                   const SizedBox(height: 30),
+
+                  // FIX 2: Restored and enhanced animations
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
+                    duration: const Duration(milliseconds: 600),
                     transitionBuilder: (Widget child, Animation<double> animation) {
-                      return SizeTransition(sizeFactor: animation, child: FadeTransition(opacity: animation, child: child));
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SizeTransition(
+                          sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                          child: child,
+                        ),
+                      );
                     },
                     child: workout != null ? _buildWorkoutCard(context, workout) : _buildRestDayCard(context),
                   ),
                   const SizedBox(height: 20),
-                  _buildWeightTrackerCard(context, workoutProvider),
-                  const SizedBox(height: 20),
-                  _buildStreakCard(context, workoutProvider),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+                  FadeSlideIn(
+                    delay: 0.2,
+                    child: _buildWeightTrackerCard(context, workoutProvider),
+                  ),
 
-  Widget _buildStreakCard(BuildContext context, WorkoutProvider provider) {
-    final streakCount = provider.weeklyStreakCount;
-    final totalWorkouts = provider.weeklyWorkoutDaysCount;
-    final message = provider.streakMessage;
-    return FrostedGlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      child: Row(
-        children: [
-          Icon(Icons.local_fire_department_rounded, color: streakCount > 0 ? Colors.orangeAccent : Colors.white38, size: 40),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Day $streakCount / $totalWorkouts", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(message, style: const TextStyle(fontSize: 14, color: Colors.white70)),
-              ],
-            ),
+                  // Final padding at the bottom to ensure nothing touches the edge
+                  const SizedBox(height: 20),
+                ],
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
-  
+
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
+       // The key is crucial for AnimatedSwitcher to detect a change
        key: ValueKey<String>(workout.id),
        onTap: () {
           if (workout.exercises.isNotEmpty) {
@@ -92,7 +128,7 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(workout.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                Text(workout.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
                 const SizedBox(height: 5),
                 Text("${workout.exercises.length} exercises", style: const TextStyle(fontSize: 16, color: Colors.white70)),
                 const SizedBox(height: 20),
@@ -115,10 +151,10 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildCalendarHeader(BuildContext context, WorkoutProvider provider) {
-    final List<DateTime> dates = List.generate(7, (index) {
-      final now = DateTime.now();
-      return now.subtract(Duration(days: now.weekday - 1)).add(Duration(days: index));
-    });
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final List<DateTime> dates = List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
+
     return SizedBox(
       height: 70,
       child: ListView.builder(
@@ -135,11 +171,12 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildRestDayCard(BuildContext context) {
     return FrostedGlassCard(
-       key: const ValueKey<String>('rest_day'),
+      // The key is crucial for AnimatedSwitcher to detect a change
+      key: const ValueKey<String>('rest_day'),
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 40.0),
-          child: Text("It's a Rest Day! 😌", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          child: Text("It's a Rest Day! 😌", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
         ),
       ),
     );
@@ -159,7 +196,7 @@ class HomeScreen extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Weight for ${DateFormat('d MMM').format(provider.selectedDate)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                Text("Weight for ${DateFormat('d MMM').format(provider.selectedDate)}", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
                 Text(displayWeight, style: const TextStyle(fontSize: 14, color: Colors.white70)),
               ],
             ),
@@ -209,7 +246,7 @@ class HomeScreen extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
+          color: isActive ? Colors.white : Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(30),
           border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.2)),
         ),
