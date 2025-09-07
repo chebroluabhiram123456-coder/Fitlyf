@@ -3,6 +3,7 @@ import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/models/weight_log_model.dart';
 import 'package:fitlyf/models/workout_status.dart';
+import 'dart:math'; // For generating a random ID
 
 // A simple model for our logged workout history
 class LoggedWorkout {
@@ -13,8 +14,21 @@ class LoggedWorkout {
 }
 
 class WorkoutProvider with ChangeNotifier {
-  // --- USER & SETTINGS DATA ---
+  // --- USER & PROFILE DATA ---
   String _userName = "User";
+  String? _profileImagePath; // To store the path of the profile picture
+
+  // --- WEEKLY PLAN DATA ---
+  // Using a Map to store which muscle group is planned for each day of the week
+  final Map<String, List<String>> _weeklyPlan = {
+    'Mon': ['Chest', 'Triceps'],
+    'Tue': ['Back', 'Biceps'],
+    'Wed': ['Legs'],
+    'Thu': ['Shoulders'],
+    'Fri': ['Full Body'],
+    'Sat': ['Rest'],
+    'Sun': ['Rest'],
+  };
   
   // --- EXERCISE LIBRARY DATA ---
   final List<Exercise> _allExercises = [
@@ -30,7 +44,6 @@ class WorkoutProvider with ChangeNotifier {
 
   // --- HISTORY & LOGGING DATA ---
   final List<WeightLog> _weightLogs = [
-      // Placeholder data so your history isn't empty
       WeightLog(date: DateTime.now().subtract(const Duration(days: 1)), weight: 75.5),
       WeightLog(date: DateTime.now().subtract(const Duration(days: 3)), weight: 76.0),
       WeightLog(date: DateTime.now().subtract(const Duration(days: 5)), weight: 75.8),
@@ -38,15 +51,16 @@ class WorkoutProvider with ChangeNotifier {
   final List<LoggedWorkout> _loggedWorkouts = [
     LoggedWorkout(date: DateTime.now().subtract(const Duration(days: 1)), workoutName: "Full Body Burn", status: WorkoutStatus.Completed),
     LoggedWorkout(date: DateTime.now().subtract(const Duration(days: 2)), workoutName: "Leg Day", status: WorkoutStatus.Skipped),
-    LoggedWorkout(date: DateTime.now().subtract(const Duration(days: 3)), workoutName: "Upper Body Blast", status: WorkoutStatus.Completed),
   ];
 
 
-  // =========== GETTERS (Fixing the naming mismatches) ===========
+  // =========== GETTERS ===========
   String get userName => _userName;
+  String? get profileImagePath => _profileImagePath;
+  Map<String, List<String>> get weeklyPlan => _weeklyPlan;
   List<Exercise> get allExercises => _allExercises;
-  List<LoggedWorkout> get workoutLog => _loggedWorkouts; // Corrected name for workout history
-  List<WeightLog> get weightHistory => _weightLogs; // Corrected name for weight history
+  List<LoggedWorkout> get workoutLog => _loggedWorkouts;
+  List<WeightLog> get weightHistory => _weightLogs;
   
   Workout? get selectedWorkout => _selectedWorkout;
   DateTime get selectedDate => _selectedDate;
@@ -60,23 +74,41 @@ class WorkoutProvider with ChangeNotifier {
   }
 
 
-  // =========== METHODS (Adding the missing functions) ===========
+  // =========== METHODS ===========
 
-  // --- Settings ---
+  // --- Profile & Settings ---
   void updateUserName(String newName) {
     _userName = newName;
     notifyListeners();
   }
-
-  // --- Exercise Library ---
-  void deleteExercise(String exerciseId) {
-    _allExercises.removeWhere((ex) => ex.id == exerciseId);
+  
+  void updateProfilePicture(String imagePath) {
+    _profileImagePath = imagePath;
     notifyListeners();
   }
-  
-  // *** NEW METHOD for AddExerciseScreen ***
+
+  // --- Weekly Plan ---
+  void updateWeeklyPlan(String day, List<String> muscles) {
+    _weeklyPlan[day] = muscles;
+    notifyListeners();
+  }
+
+  // --- Exercise Library ---
   void addCustomExercise(Exercise newExercise) {
     _allExercises.add(newExercise);
+    notifyListeners();
+  }
+
+  void updateExercise(Exercise updatedExercise) {
+    final index = _allExercises.indexWhere((ex) => ex.id == updatedExercise.id);
+    if (index != -1) {
+      _allExercises[index] = updatedExercise;
+      notifyListeners();
+    }
+  }
+  
+  void deleteExercise(String exerciseId) {
+    _allExercises.removeWhere((ex) => ex.id == exerciseId);
     notifyListeners();
   }
   
@@ -86,13 +118,10 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  // *** NEW METHOD for WorkoutHistoryScreen ***
   WorkoutStatus? getWorkoutStatusForDate(DateTime date) {
     try {
       return _loggedWorkouts.firstWhere((log) => DateUtils.isSameDay(log.date, date)).status;
-    } catch (e) {
-      return null; // Return null if no log is found for that date
-    }
+    } catch (e) { return null; }
   }
 
   // --- Daily Workout Progress ---
