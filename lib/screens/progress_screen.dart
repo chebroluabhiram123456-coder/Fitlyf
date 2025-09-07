@@ -19,7 +19,6 @@ class ProgressScreen extends StatelessWidget {
         final weightHistory = workoutProvider.weightHistory.entries.toList();
         weightHistory.sort((a, b) => a.key.compareTo(b.key));
         final todaysWorkout = workoutProvider.getTodaysWorkout;
-
         return Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
