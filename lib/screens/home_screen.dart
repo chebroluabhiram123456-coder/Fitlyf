@@ -18,31 +18,32 @@ class HomeScreen extends StatelessWidget {
         final workout = workoutProvider.selectedWorkout;
         return Scaffold(
           backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCalendarHeader(context, workoutProvider),
-                    const SizedBox(height: 30),
-                    Text("Get ready, ${workoutProvider.userName}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                    Text("Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}", style: const TextStyle(fontSize: 18, color: Colors.white70)),
-                    const SizedBox(height: 30),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return SizeTransition(sizeFactor: animation, child: FadeTransition(opacity: animation, child: child));
-                      },
-                      child: workout != null ? _buildWorkoutCard(context, workout) : _buildRestDayCard(context),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildWeightTrackerCard(context, workoutProvider),
-                    const SizedBox(height: 20),
-                    _buildStreakCard(context, workoutProvider),
-                  ],
-                ),
+          // *** THE FIX IS HERE ***
+          // We remove the SafeArea widget and let the SingleChildScrollView handle the insets.
+          body: SingleChildScrollView(
+            primary: true, // This tells the scroll view to handle the safe area padding automatically.
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCalendarHeader(context, workoutProvider),
+                  const SizedBox(height: 30),
+                  Text("Get ready, ${workoutProvider.userName}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text("Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}", style: const TextStyle(fontSize: 18, color: Colors.white70)),
+                  const SizedBox(height: 30),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return SizeTransition(sizeFactor: animation, child: FadeTransition(opacity: animation, child: child));
+                    },
+                    child: workout != null ? _buildWorkoutCard(context, workout) : _buildRestDayCard(context),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildWeightTrackerCard(context, workoutProvider),
+                  const SizedBox(height: 20),
+                  _buildStreakCard(context, workoutProvider),
+                ],
               ),
             ),
           ),
