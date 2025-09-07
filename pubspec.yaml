@@ -11,7 +11,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Your existing dependencies (preserved)
   cupertino_icons: ^1.0.2
   provider: ^6.1.1
   firebase_core: ^2.24.2
@@ -19,12 +18,13 @@ dependencies:
   cloud_firestore: ^4.14.0
   image_picker: ^1.0.7
   firebase_storage: ^11.6.0
-
-  # *** NEW PACKAGES FOR THE PROGRESS SCREEN ***
   intl: ^0.19.0
   table_calendar: ^3.0.9
   fl_chart: ^0.68.0
-  # *******************************************
+
+  # *** THE MISSING PACKAGE IS ADDED HERE ***
+  google_fonts: ^6.2.1
+  # ****************************************
 
 
 dev_dependencies:
