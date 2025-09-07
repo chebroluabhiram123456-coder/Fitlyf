@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
-// *** THIS IS THE ONLY LINE YOU NEED TO ADD ***
-import 'package:fitlyf/models/weight_log_model.dart'; // <-- ADD THIS IMPORT
-// ***********************************************
 import 'package:fitlyf/models/workout_status.dart';
 import 'dart:math';
 
+// *** BLUEPRINT 1: The WeightLog class is now defined HERE ***
+class WeightLog {
+  final DateTime date;
+  final double weight;
+  WeightLog({ required this.date, required this.weight });
+}
+
+// *** BLUEPRINT 2: The LoggedWorkout class is also here for simplicity ***
 class LoggedWorkout {
   final DateTime date;
   final String workoutName;
@@ -14,6 +19,7 @@ class LoggedWorkout {
   LoggedWorkout({required this.date, required this.workoutName, required this.status});
 }
 
+// --- The Main Provider Class ---
 class WorkoutProvider with ChangeNotifier {
   // --- USER & PROFILE DATA ---
   String _userName = "User";
@@ -42,6 +48,7 @@ class WorkoutProvider with ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
 
   // --- HISTORY & LOGGING DATA ---
+  // This list now correctly uses the WeightLog class defined above
   final List<WeightLog> _weightLogs = [
       WeightLog(date: DateTime.now().subtract(const Duration(days: 1)), weight: 75.5),
       WeightLog(date: DateTime.now().subtract(const Duration(days: 3)), weight: 76.0),
@@ -138,6 +145,7 @@ class WorkoutProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // This method now correctly uses the WeightLog class defined above
   void logUserWeight(double weight) {
     _weightLogs.removeWhere((log) => DateUtils.isSameDay(log.date, _selectedDate));
     _weightLogs.add(WeightLog(date: _selectedDate, weight: weight));
