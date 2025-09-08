@@ -5,8 +5,6 @@ plugins {
     id("com.android.application")
     kotlin("android")
     id("dev.flutter.flutter-gradle-plugin")
-
-    // *** 1. ADD THIS LINE FOR FIREBASE ***
     id("com.google.gms.google-services")
 }
 
@@ -43,8 +41,6 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
-
-        // *** 2. ADD THIS LINE TO PREVENT BUILD ERRORS WITH FIREBASE ***
         multiDexEnabled = true
     }
 
