@@ -1,3 +1,4 @@
+// We keep the versions and dependencies...
 buildscript {
     ext.kotlin_version = '1.7.10'
     repositories {
@@ -11,11 +12,9 @@ buildscript {
     }
 }
 
+// ...but we remove the conflicting repository declarations from allprojects.
 allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+    // This block is now empty, as settings.gradle handles repositories.
 }
 
 rootProject.buildDir = '../build'
