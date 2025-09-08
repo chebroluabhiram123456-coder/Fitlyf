@@ -1,223 +1,164 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
+import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
+import 'package:fitlyf/widgets/frosted_glass_card.dart';
+import 'package:fitlyf/screens/exercise_detail_screen.dart';
+import 'package:fitlyf/helpers/fade_route.dart';
 import 'package:fitlyf/screens/live_workout_screen.dart';
 
 class WorkoutDetailScreen extends StatefulWidget {
   final Workout workout;
-
-  const WorkoutDetailScreen({super.key, required this.workout});
+  const WorkoutDetailScreen({required this.workout, Key? key}) : super(key: key);
 
   @override
-  State<WorkoutDetailScreen> createState() => _WorkoutDetailScreenState();
+  _WorkoutDetailScreenState createState() => _WorkoutDetailScreenState();
 }
 
 class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
-  // We need a local state copy of the exercises to allow reordering
-  late List<Exercise> _reorderableExercises;
+  late List<Exercise> _orderedExercises;
 
   @override
   void initState() {
     super.initState();
-    // Create a mutable copy of the exercises list from the workout
-    _reorderableExercises = List.of(widget.workout.exercises);
+    _orderedExercises = List.from(widget.workout.exercises);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<WorkoutProvider>(context, listen: false).startWorkoutSession();
+    });
   }
   
-  // Handles the logic for reordering the list
-  void _onReorder(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final Exercise item = _reorderableExercises.removeAt(oldIndex);
-      _reorderableExercises.insert(newIndex, item);
-    });
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Using a Consumer to ensure the UI rebuilds when provider data changes
-    return Consumer<WorkoutProvider>(
-      builder: (context, workoutProvider, child) {
-        return Scaffold(
-          backgroundColor: Colors.black,
-          body: CustomScrollView(
-            slivers: [
-              _buildSliverAppBar(),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStatRow(context, workoutProvider),
-                      const SizedBox(height: 30),
-                      const Text("Exercises", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                      const SizedBox(height: 10),
-                    ],
-                  ),
-                ),
-              ),
-              // This is the new reorderable list of exercises
-              SliverReorderableList(
-                itemBuilder: (context, index) {
-                  final exercise = _reorderableExercises[index];
-                  final isCompleted = workoutProvider.inProgressExerciseIds.contains(exercise.id);
-
-                  return ReorderableDelayedDragStartListener(
-                    key: ValueKey(exercise.id), // Keys are crucial for reordering
-                    index: index,
-                    child: CheckboxListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      title: Text(exercise.name, style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(
-                        '${exercise.targetMuscle} • ${exercise.sets} sets, ${exercise.reps} reps',
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      value: isCompleted,
-                      onChanged: (bool? value) {
-                        workoutProvider.toggleExerciseStatus(exercise.id);
-                      },
-                      activeColor: Colors.greenAccent,
-                      checkColor: Colors.black,
-                      secondary: const Icon(Icons.drag_handle, color: Colors.white30),
-                    ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(widget.workout.name),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: Consumer<WorkoutProvider>(
+                builder: (context, workoutProvider, child) {
+                  final isWorkoutComplete = workoutProvider.workoutLog.containsKey(DateUtils.dateOnly(workoutProvider.selectedDate));
+                  return ReorderableListView.builder(
+                    padding: const EdgeInsets.all(20.0),
+                    itemCount: _orderedExercises.length,
+                    itemBuilder: (ctx, index) {
+                      final exercise = _orderedExercises[index];
+                      return Padding(
+                        key: ValueKey(exercise.id),
+                        padding: const EdgeInsets.only(bottom: 15.0),
+                        child: FrostedGlassCard(
+                          padding: const EdgeInsets.all(5),
+                          child: ListTile(
+                            leading: Checkbox(
+                              value: workoutProvider.isExerciseInProgressCompleted(exercise.id),
+                              activeColor: Colors.white,
+                              checkColor: const Color(0xFF2D1458),
+                              onChanged: isWorkoutComplete ? null : (bool? value) {
+                                if (value != null) {
+                                  workoutProvider.toggleInProgressExerciseCompletion(exercise.id, value);
+                                  if (workoutProvider.areAllExercisesComplete(_orderedExercises)) {
+                                    _finishWorkout(context, workoutProvider);
+                                  }
+                                }
+                              },
+                            ),
+                            title: Text(exercise.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}', style: const TextStyle(color: Colors.white70)),
+                            trailing: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle, color: Colors.white70)),
+                            onTap: () { Navigator.push(context, FadePageRoute(child: ExerciseDetailScreen(exercise: exercise))); },
+                          ),
+                        ),
+                      );
+                    },
+                    onReorder: (int oldIndex, int newIndex) {
+                      setState(() {
+                         if (newIndex > oldIndex) newIndex -= 1;
+                         final item = _orderedExercises.removeAt(oldIndex);
+                         _orderedExercises.insert(newIndex, item);
+                      });
+                    },
                   );
                 },
-                itemCount: _reorderableExercises.length,
-                onReorder: _onReorder,
               ),
-              // This ensures the buttons are always at the bottom
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: _buildActionButtons(context, workoutProvider),
-                )
-              ),
-            ],
-          ),
-        );
-      }
-    );
-  }
-
-  SliverAppBar _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 250.0,
-      backgroundColor: Colors.transparent,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(widget.workout.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        background: Container(
-          color: Colors.grey[900],
-          child: const Icon(Icons.fitness_center, size: 100, color: Colors.white24),
+            ),
+            _buildActionButtons(context),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStatRow(BuildContext context, WorkoutProvider workoutProvider) {
-    final exercisesInThisWorkout = widget.workout.exercises.map((e) => e.id).toSet();
-    final completedCount = workoutProvider.inProgressExerciseIds
-        .where((id) => exercisesInThisWorkout.contains(id))
-        .length;
-    final totalExercises = widget.workout.exercises.length;
-    final progress = totalExercises > 0 ? completedCount / totalExercises : 0.0;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("PROGRESS", style: TextStyle(color: Colors.white70, letterSpacing: 1.5)),
-            const SizedBox(height: 5),
-            Text("$completedCount / $totalExercises", style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        SizedBox(
-          width: 80,
-          height: 80,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: progress),
-            duration: const Duration(milliseconds: 500),
-            builder: (context, value, child) => CircularProgressIndicator(
-              value: value,
-              strokeWidth: 6,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
-            ),
-          ),
-        )
-      ],
-    );
+  void _finishWorkout(BuildContext context, WorkoutProvider provider) {
+    final completedWorkout = Workout(id: widget.workout.id, name: widget.workout.name, exercises: _orderedExercises);
+    provider.logWorkout(provider.selectedDate, completedWorkout);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Workout Complete! Great job!"), backgroundColor: Colors.green));
+    Navigator.of(context).pop();
   }
   
-  Widget _buildActionButtons(BuildContext context, WorkoutProvider workoutProvider) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Live workout button uses the reordered list
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.greenAccent,
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+  Widget _buildActionButtons(BuildContext context) {
+    final provider = Provider.of<WorkoutProvider>(context);
+    final isWorkoutComplete = provider.workoutLog.containsKey(DateUtils.dateOnly(provider.selectedDate));
+    if (isWorkoutComplete) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(20, 10, 20, 30),
+        child: Text("Workout already logged for this day.", textAlign: TextAlign.center, style: TextStyle(color: Colors.greenAccent, fontSize: 16)),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                final reorderedWorkout = Workout(id: widget.workout.id, name: widget.workout.name, exercises: _orderedExercises);
+                Navigator.push(context, FadePageRoute(child: LiveWorkoutScreen(workout: reorderedWorkout)));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458),
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: const Text('Start Live'),
+            ),
           ),
-          onPressed: () {
-            // Create a new workout object with the reordered exercises to pass to the next screen
-            final reorderedWorkout = widget.workout.copyWith(exercises: _reorderableExercises);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => LiveWorkoutScreen(workout: reorderedWorkout)),
-            );
-          },
-          child: const Text('Start Live Workout', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 15),
-        // Quick Log button
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey[800],
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          const SizedBox(width: 15),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                provider.markAllExercisesAsComplete(_orderedExercises);
+                _finishWorkout(context, provider);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30), side: const BorderSide(color: Colors.white54)),
+              ),
+              child: const Text('Quick Log'),
+            ),
           ),
-          onPressed: () {
-            // Call the new provider method
-            workoutProvider.quickLogWorkout(widget.workout);
-            // Show a confirmation message and navigate back
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Workout Logged! Great job!'), backgroundColor: Colors.green),
-            );
-            Navigator.pop(context);
-          },
-          child: const Text('Quick Log', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
-
-// NOTE: You will need to add a `copyWith` method to your Workout model for the reordering to work seamlessly.
-// Add this to your `lib/models/workout_model.dart` file:
-/*
-  Workout copyWith({
-    String? id,
-    String? name,
-    List<Exercise>? exercises,
-    // ... any other properties
-  }) {
-    return Workout(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      exercises: exercises ?? this.exercises,
-      // ... any other properties
-    );
-  }
-*/
