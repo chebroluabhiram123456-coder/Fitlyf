@@ -1,221 +1,181 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
-import 'package:fitlyf/models/workout_status.dart';
-import 'package:fitlyf/screens/weight_detail_screen.dart'; // <-- Import for navigation
-import 'package:fitlyf/screens/workout_history_screen.dart'; // <-- Import for navigation
-import 'package:table_calendar/table_calendar.dart';
+import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
-class ProgressScreen extends StatefulWidget {
+class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
 
   @override
-  State<ProgressScreen> createState() => _ProgressScreenState();
-}
-
-class _ProgressScreenState extends State<ProgressScreen> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = _focusedDay;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('My Progress'),
-        backgroundColor: Colors.grey[900]?.withOpacity(0.8),
-        elevation: 0,
+    // This Container provides the purple gradient background to match the HomeScreen
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      body: Consumer<WorkoutProvider>(
-        builder: (context, provider, child) {
-          return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            children: [
-              // *** FIX 1: Added navigation to the Weight Chart ***
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const WeightDetailScreen()),
-                  );
-                },
-                child: _buildWeightChartCard(provider),
-              ),
-              const SizedBox(height: 24),
-              // *** FIX 2: Added navigation to the Workout Calendar ***
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const WorkoutHistoryScreen()),
-                  );
-                },
-                child: _buildCalendarCard(provider),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('Your Progress', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Consumer<WorkoutProvider>(
+          builder: (context, workoutProvider, child) {
+            // *** FIX 1: Correctly get and sort the weight history ***
+            // weightHistory is a List<WeightLog>, not a Map.
+            final weightHistory = workoutProvider.weightHistory;
+            weightHistory.sort((a, b) => a.date.compareTo(b.date));
+            
+            // *** FIX 2: Calculate overall workout stats from your history ***
+            // This reflects your long-term progress, not just one day.
+            final completedWorkouts = workoutProvider.workoutLog
+                .where((log) => log.status == WorkoutStatus.Completed)
+                .length;
+            final totalLoggedWorkouts = workoutProvider.workoutLog.length;
 
-  Widget _buildWeightChartCard(WorkoutProvider provider) {
-    final weightHistory = provider.weightHistory..sort((a, b) => a.date.compareTo(b.date));
-    
-    return Card(
-      color: Colors.grey[900],
-      margin: const EdgeInsets.symmetric(horizontal: 16.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Weight History",
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-              ],
-            ),
-            const SizedBox(height: 20),
-            weightHistory.isEmpty
-                ? const SizedBox(height: 150, child: Center(child: Text("No weight data logged.", style: TextStyle(color: Colors.white70))))
-                : SizedBox(
-                    height: 180,
-                    child: IgnorePointer( // Makes the chart non-interactive so the card tap works
-                      child: LineChart(
-                        _buildChartData(weightHistory),
-                        duration: const Duration(milliseconds: 500),
-                      ),
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Weight Analytics",
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                  ),
-          ],
+                    const SizedBox(height: 20),
+                    // Your original weight chart card, now with corrected data
+                    _buildWeightChartCard(context, weightHistory),
+                    const SizedBox(height: 30),
+                    const Text(
+                      "Workout Stats",
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const SizedBox(height: 20),
+                    // Your original stats card, now with corrected data
+                    _buildStatsCard(context, completedWorkouts, totalLoggedWorkouts),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildCalendarCard(WorkoutProvider provider) {
-    return Card(
-      color: Colors.grey[900],
-      margin: const EdgeInsets.symmetric(horizontal: 16.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0), // Padding for the arrow
-        child: Column(
-          children: [
-             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Workout Calendar",
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-                ],
+  // Your original _buildWeightChartCard, with the input type changed to List<WeightLog>
+  Widget _buildWeightChartCard(BuildContext context, List<WeightLog> weightHistory) {
+    return FrostedGlassCard(
+      child: AspectRatio(
+        aspectRatio: 1.7,
+        child: weightHistory.length < 2 
+            ? const Center(
+                child: Text(
+                  "Log more than one weight entry to see your chart!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                ),
+              )
+            : LineChart(
+                _buildChartData(context, weightHistory),
+                duration: const Duration(milliseconds: 400),
               ),
-            ),
-            IgnorePointer( // Makes the calendar non-interactive so the card tap works
-              child: TableCalendar(
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.now().add(const Duration(days: 365)),
-                focusedDay: _focusedDay,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  // The card's onTap handles navigation, so this can be empty
-                },
-                calendarStyle: CalendarStyle(
-                  defaultTextStyle: const TextStyle(color: Colors.white),
-                  weekendTextStyle: const TextStyle(color: Colors.white70),
-                  outsideTextStyle: const TextStyle(color: Colors.white30),
-                  todayDecoration: BoxDecoration(
-                    color: Colors.greenAccent.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  selectedDecoration: const BoxDecoration(
-                    color: Colors.greenAccent,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                headerStyle: const HeaderStyle(
-                  titleTextStyle: TextStyle(color: Colors.white, fontSize: 18),
-                  formatButtonVisible: false,
-                  leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
-                  rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
-                ),
-                calendarBuilders: CalendarBuilders(
-                  markerBuilder: (context, date, events) {
-                    final status = provider.getWorkoutStatusForDate(date);
-                    if (status == WorkoutStatus.Completed) {
-                      return Positioned(
-                        bottom: 1,
-                        child: Container(
-                          width: 6, height: 6,
-                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.greenAccent),
-                        ),
-                      );
-                    }
-                    if (status == WorkoutStatus.Skipped) {
-                      return Positioned(
-                        bottom: 1,
-                        child: Container(
-                          width: 6, height: 6,
-                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.redAccent),
-                        ),
-                      );
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  LineChartData _buildChartData(List<WeightLog> history) {
-    List<FlSpot> spots = history.asMap().entries.map((entry) {
+  // Your original _buildStatsCard, with variable names updated for clarity
+  Widget _buildStatsCard(BuildContext context, int completed, int total) {
+    double percentage = total > 0 ? (completed / total) * 100 : 0;
+
+    return FrostedGlassCard(
+      padding: const EdgeInsets.all(25),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Column(
+            children: [
+              Text(
+                "$completed / $total",
+                style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              const Text("Workouts Done", style: TextStyle(color: Colors.white70)),
+            ],
+          ),
+          Column(
+            children: [
+              Text(
+                "${percentage.toStringAsFixed(0)}%",
+                style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              const Text("Completion", style: TextStyle(color: Colors.white70)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Your original _buildChartData, with logic updated to read from a List<WeightLog>
+  LineChartData _buildChartData(BuildContext context, List<WeightLog> weightHistory) {
+    List<FlSpot> spots = weightHistory.asMap().entries.map((entry) {
+      // Use the list index for the x-axis and the log's weight for the y-axis
       return FlSpot(entry.key.toDouble(), entry.value.weight);
     }).toList();
 
     return LineChartData(
-      gridData: FlGridData(show: false),
-      titlesData: FlTitlesData(show: false),
-      borderData: FlBorderData(show: false),
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: true,
+        getDrawingHorizontalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8),
+        getDrawingVerticalLine: (value) => const FlLine(color: Colors.white24, strokeWidth: 0.8),
+      ),
+      titlesData: FlTitlesData(
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 35, interval: 2)),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 30,
+            interval: (spots.length / 4).ceil().toDouble(), // Show around 4 labels
+            getTitlesWidget: (value, meta) {
+              int index = value.toInt();
+              if (index >= 0 && index < weightHistory.length) {
+                // Correctly get the date from the WeightLog object
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  space: 8.0,
+                  child: Text(DateFormat('d MMM').format(weightHistory[index].date), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                );
+              }
+              return const Text('');
+            },
+          ),
+        ),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      borderData: FlBorderData(show: true, border: Border.all(color: Colors.white24)),
+      minX: 0,
+      maxX: (spots.length - 1).toDouble(),
       lineBarsData: [
         LineChartBarData(
           spots: spots,
           isCurved: true,
-          color: Colors.greenAccent,
-          barWidth: 4,
+          color: Theme.of(context).colorScheme.secondary, // Use a nice theme color
+          barWidth: 5,
           isStrokeCapRound: true,
-          dotData: FlDotData(show: false), // Hiding dots for a cleaner look on the dashboard
+          dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
-            gradient: LinearGradient(
-              colors: [
-                Colors.greenAccent.withOpacity(0.3),
-                Colors.greenAccent.withOpacity(0.0),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
+            color: Theme.of(context).colorScheme.secondary.withOpacity(0.3),
           ),
         ),
       ],
