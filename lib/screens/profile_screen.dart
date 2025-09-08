@@ -22,8 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null && mounted) {
-      Provider.of<WorkoutProvider>(context, listen: false)
-          .updateProfilePicture(pickedFile.path);
+      Provider.of<WorkoutProvider>(context, listen: false).updateProfilePicture(pickedFile.path);
     }
   }
 
@@ -42,38 +41,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     children: [
-                      _buildProfileMenuItem(
-                        context: context,
-                        icon: Icons.list_alt,
-                        title: 'Exercise Library',
-                        subtitle: 'View all your exercises',
-                        onTap: () {
-                          Navigator.push(context, FadePageRoute(child: const ExerciseLibraryScreen()));
-                        },
-                      ),
-                      _buildProfileMenuItem(
-                        context: context,
-                        icon: Icons.history,
-                        title: 'Workout Log',
-                        subtitle: 'See your past workouts',
-                        onTap: () {
-                           Navigator.push(context, FadePageRoute(child: const WorkoutLogScreen()));
-                        },
-                      ),
-                      _buildProfileMenuItem(
-                        context: context,
-                        icon: Icons.settings,
-                        title: 'Settings',
-                        subtitle: 'App preferences',
-                        onTap: () {
-                          Navigator.push(context, FadePageRoute(child: const SettingsScreen()));
-                        },
-                      ),
+                      _buildProfileMenuItem(context: context, icon: Icons.list_alt, title: 'Exercise Library', subtitle: 'View all your exercises', onTap: () { Navigator.push(context, FadePageRoute(child: const ExerciseLibraryScreen())); }),
+                      _buildProfileMenuItem(context: context, icon: Icons.history, title: 'Workout Log', subtitle: 'See your past workouts', onTap: () { Navigator.push(context, FadePageRoute(child: const WorkoutLogScreen())); }),
+                      _buildProfileMenuItem(context: context, icon: Icons.settings, title: 'Settings', subtitle: 'App preferences', onTap: () { Navigator.push(context, FadePageRoute(child: const SettingsScreen())); }),
                       const SizedBox(height: 30),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 16)),
-                      ),
+                      TextButton(onPressed: () {}, child: const Text('Log Out', style: TextStyle(color: Colors.redAccent, fontSize: 16))),
                     ],
                   ),
                 ),
@@ -99,8 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: imagePath == null ? const Icon(Icons.person, size: 40, color: Colors.white70) : null,
               ),
               Positioned(
-                bottom: 0,
-                right: 0,
+                bottom: 0, right: 0,
                 child: GestureDetector(
                   onTap: _pickImage,
                   child: Container(
@@ -113,10 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(width: 20),
-          Text(
-            'Hi $userName!',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
+          Text('Hi $userName!', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
         ],
       ),
     );
