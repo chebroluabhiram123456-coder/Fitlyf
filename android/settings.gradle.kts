@@ -1,30 +1,12 @@
 pluginManagement {
-    val flutterSdkPath =
-        run {
-            val properties = java.util.Properties()
-            file("local.properties").inputStream().use { properties.load(it) }
-            val flutterSdkPath = properties.getProperty("flutter.sdk")
-            require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
-            flutterSdkPath
-        }
-
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
+    includeBuild("../programs/flutter/packages/flutter_tools/gradle")
 }
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // *** UPDATED to a modern, stable version ***
-    id("com.android.application") version "8.2.1" apply false 
-    // *** UPDATED to a modern, stable version ***
-    id("org.jetbrains.kotlin.android") version "1.9.22" apply false 
-
-    id("com.google.gms.google-services") version "4.4.1" apply false
+    id("com.android.application") version "8.2.1" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
 }
 
-include(":app")p
+// THE FIX: The typo has been removed from this line.
+include(":app")
