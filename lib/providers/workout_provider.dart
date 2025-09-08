@@ -19,12 +19,12 @@ class WorkoutProvider with ChangeNotifier {
 
   final List<Workout> _workouts = [
     Workout( id: 'w1', name: 'Full Body A', exercises: [
-        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8),
-        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10),
+        Exercise(id: 'ex1', name: 'Barbell Incline Bench Press', targetMuscle: 'Chest', sets: 4, reps: 8, description: 'An upper-body strength exercise.'),
+        Exercise(id: 'ex2', name: 'Barbell Push Press', targetMuscle: 'Shoulders', sets: 3, reps: 10, description: 'A powerful overhead press variation.'),
     ]),
     Workout( id: 'w2', name: 'Full Body B', exercises: [
-        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5),
-        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5),
+        Exercise(id: 'ex3', name: 'Squats', targetMuscle: 'Legs', sets: 5, reps: 5, description: 'A fundamental lower-body exercise.'),
+        Exercise(id: 'ex4', name: 'Deadlifts', targetMuscle: 'Back', sets: 1, reps: 5, description: 'A compound lift that works the entire posterior chain.'),
     ]),
   ];
   
@@ -62,7 +62,9 @@ class WorkoutProvider with ChangeNotifier {
   }
   
   Workout? get getTodaysWorkout {
-    final dayName = DateFormat('EEEE').format(DateTime.now());
+    final today = DateUtils.dateOnly(DateTime.now());
+    if (_workoutLog.containsKey(today)) return _workoutLog[today];
+    final dayName = DateFormat('EEEE').format(today);
     final targetMuscles = _weeklyPlan[dayName];
     if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
@@ -74,7 +76,16 @@ class WorkoutProvider with ChangeNotifier {
 
   List<Exercise> get allExercises { return [..._workouts.expand((workout) => workout.exercises), ..._customExercises]; }
   
-  void startWorkoutSession() { _inProgressExerciseIds.clear(); notifyListeners(); }
+  void startWorkoutSession() {
+    final dateOnly = DateUtils.dateOnly(_selectedDate);
+    if (_workoutLog.containsKey(dateOnly)) {
+      final loggedWorkout = _workoutLog[dateOnly]!;
+      _inProgressExerciseIds = loggedWorkout.exercises.where((ex) => ex.isCompleted).map((ex) => ex.id).toSet();
+    } else {
+      _inProgressExerciseIds.clear();
+    }
+    notifyListeners();
+  }
   void toggleInProgressExerciseCompletion(String exerciseId, bool isCompleted) { if (isCompleted) _inProgressExerciseIds.add(exerciseId); else _inProgressExerciseIds.remove(exerciseId); notifyListeners(); }
   bool areAllExercisesComplete(List<Exercise> exercises) { if (exercises.isEmpty) return false; final exerciseIds = exercises.map((e) => e.id).toSet(); return _inProgressExerciseIds.containsAll(exerciseIds); }
   void logWorkout(DateTime date, Workout workout) { final loggedWorkout = Workout(id: workout.id, name: workout.name, exercises: workout.exercises.map((ex) { return Exercise(id: ex.id, name: ex.name, targetMuscle: ex.targetMuscle, sets: ex.sets, reps: ex.reps, description: ex.description, imageUrl: ex.imageUrl, videoUrl: ex.videoUrl, isCompleted: _inProgressExerciseIds.contains(ex.id)); }).toList()); _workoutLog[DateUtils.dateOnly(date)] = loggedWorkout; if (_achievements['first_workout'] == false) _achievements['first_workout'] = true; notifyListeners(); }
