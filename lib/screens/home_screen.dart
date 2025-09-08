@@ -6,6 +6,7 @@ import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/helpers/fade_route.dart';
+import 'package:fitlyf/screens/add_exercise_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
