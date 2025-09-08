@@ -6,6 +6,7 @@ import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/helpers/fade_route.dart';
+import 'package:fitlyf/screens/add_exercise_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -26,22 +27,13 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     _buildCalendarHeader(context, workoutProvider),
                     const SizedBox(height: 30),
-                    Text(
-                      "Get ready, ${workoutProvider.userName}",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
-                      style: const TextStyle(fontSize: 18, color: Colors.white70),
-                    ),
+                    Text("Get ready, ${workoutProvider.userName}", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    Text("Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}", style: const TextStyle(fontSize: 18, color: Colors.white70)),
                     const SizedBox(height: 30),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       transitionBuilder: (Widget child, Animation<double> animation) {
-                        return SizeTransition(
-                          sizeFactor: animation,
-                          child: FadeTransition(opacity: animation, child: child),
-                        );
+                        return SizeTransition(sizeFactor: animation, child: FadeTransition(opacity: animation, child: child));
                       },
                       child: workout != null ? _buildWorkoutCard(context, workout) : _buildRestDayCard(context),
                     ),
