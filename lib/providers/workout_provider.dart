@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/models/workout_status.dart';
-import 'package:intl/intl.dart';
+import 'package.dart';
 import 'dart:math';
 
 // --- Data Models are included here to prevent any missing import errors ---
@@ -67,11 +67,11 @@ class WorkoutProvider with ChangeNotifier {
     LoggedWorkout(date: DateTime.now().subtract(const Duration(days: 2)), workoutName: "Leg Day", status: WorkoutStatus.Skipped),
   ];
 
-
-  // =========== GETTERS (These were all missing) ===========
+  // =========== GETTERS ===========
   String get userName => _userName;
   List<Workout> get allWorkouts => _allWorkouts;
   Map<String, String?> get weeklyPlan => _weeklyPlan;
+  List<Exercise> get allExercises => _allExercises;
   List<LoggedWorkout> get workoutLog => _loggedWorkouts;
   List<WeightLog> get weightHistory => _weightLogs;
   DateTime get selectedDate => _selectedDate;
@@ -93,8 +93,7 @@ class WorkoutProvider with ChangeNotifier {
     } catch (e) { return null; }
   }
 
-
-  // =========== METHODS (These were all missing) ===========
+  // =========== METHODS ===========
   void changeSelectedDate(DateTime newDate) {
     _selectedDate = newDate;
     notifyListeners();
@@ -120,6 +119,21 @@ class WorkoutProvider with ChangeNotifier {
   void updateWeeklyPlan(String day, String? workoutId) {
     _weeklyPlan[day] = workoutId;
     notifyListeners();
+  }
+  
+  // *** RESTORED METHOD 1 ***
+  void addCustomExercise(Exercise newExercise) {
+    _allExercises.add(newExercise);
+    notifyListeners();
+  }
+
+  // *** RESTORED METHOD 2 ***
+  void updateExercise(Exercise updatedExercise) {
+    final index = _allExercises.indexWhere((ex) => ex.id == updatedExercise.id);
+    if (index != -1) {
+      _allExercises[index] = updatedExercise;
+      notifyListeners();
+    }
   }
   
   void toggleExerciseStatus(String exerciseId) {
