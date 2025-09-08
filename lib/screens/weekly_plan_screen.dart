@@ -12,7 +12,6 @@ class WeeklyPlanScreen extends StatelessWidget {
       builder: (context, workoutProvider, child) {
         final weeklyPlan = workoutProvider.weeklyPlan;
         final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
         return Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
