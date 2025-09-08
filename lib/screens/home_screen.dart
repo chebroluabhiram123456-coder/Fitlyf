@@ -4,10 +4,12 @@ import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/screens/add_exercise_screen.dart';
+// *** FIX: Added missing imports for the navigation pages ***
 import 'package:fitlyf/screens/progress_screen.dart';
 import 'package:fitlyf/screens/weekly_plan_screen.dart';
+// **********************************************************
 import 'package:intl/intl.dart';
-import 'package:fitlyf/models/workout_model.dart'; // This import now works correctly
+import 'package:fitlyf/models/workout_model.dart';
 
 // The HomeScreen is now a StatefulWidget to manage the navigation state
 class HomeScreen extends StatefulWidget {
@@ -20,12 +22,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  // This list holds the different pages for your app
+  // This list holds the different pages for your app. It will now work correctly.
   static const List<Widget> _widgetOptions = <Widget>[
-    _HomeContent(), // Your beautiful UI is now the first page
+    _HomeContent(), 
     ProgressScreen(),
     WeeklyPlanScreen(),
-    Scaffold(body: Center(child: Text('Profile Screen', style: TextStyle(color: Colors.white)))),
+    Scaffold(backgroundColor: Color(0xFF1A0E38), body: Center(child: Text('Profile Screen', style: TextStyle(color: Colors.white)))),
   ];
 
   void _onItemTapped(int index) {
@@ -37,12 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // The body will be the currently selected page
       body: IndexedStack(
         index: _selectedIndex,
         children: _widgetOptions,
       ),
-      // The bottom navigation bar is now part of the HomeScreen's Scaffold
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
