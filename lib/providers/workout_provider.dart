@@ -61,6 +61,7 @@ class WorkoutProvider with ChangeNotifier {
   ];
 
   // --- APP STATE & LOGS ---
+  final Set<String> inProgressExerciseIds = {};
   DateTime _selectedDate = DateTime.now();
   final List<WeightLog> _weightLogs = [
       WeightLog(date: DateTime.now().subtract(const Duration(days: 1)), weight: 75.5),
@@ -145,6 +146,36 @@ class WorkoutProvider with ChangeNotifier {
     } else {
       _weeklyPlan[day] = muscles;
     }
+    notifyListeners();
+  }
+
+  void addCustomExercise(Exercise newExercise) {
+    _allExercises.add(newExercise);
+    notifyListeners();
+  }
+
+  void updateExercise(Exercise updatedExercise) {
+    final index = _allExercises.indexWhere((ex) => ex.id == updatedExercise.id);
+    if (index != -1) {
+      _allExercises[index] = updatedExercise;
+      notifyListeners();
+    }
+  }
+
+  void toggleExerciseStatus(String exerciseId) {
+    if (inProgressExerciseIds.contains(exerciseId)) {
+      inProgressExerciseIds.remove(exerciseId);
+    } else {
+      inProgressExerciseIds.add(exerciseId);
+    }
+    notifyListeners();
+  }
+
+  void quickLogWorkout(Workout workout) {
+    final allExerciseIds = workout.exercises.map((e) => e.id).toSet();
+    inProgressExerciseIds.addAll(allExerciseIds);
+    _loggedWorkouts.removeWhere((log) => DateUtils.isSameDay(log.date, _selectedDate));
+    _loggedWorkouts.add(LoggedWorkout(date: _selectedDate, workoutName: workout.name, status: WorkoutStatus.Completed));
     notifyListeners();
   }
 }
