@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fitlyf/models/exercise_model.dart';
-// THE FIX: Add the two missing import statements.
 import 'package:video_player/video_player.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 
