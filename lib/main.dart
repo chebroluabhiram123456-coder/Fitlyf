@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitlyf/providers/workout_provider.dart';
-import 'package:fitlyf/screens/home_screen.dart';
+// *** THIS NOW CORRECTLY POINTS TO HomeScreen ***
+import 'package:fitlyf/screens/home_screen.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -24,16 +25,11 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
-          scaffoldBackgroundColor: Colors.black,
-          primaryColor: Colors.greenAccent,
           textTheme: GoogleFonts.poppinsTextTheme(
             Theme.of(context).textTheme.apply(bodyColor: Colors.white, displayColor: Colors.white)
           ),
-          colorScheme: const ColorScheme.dark(
-            primary: Colors.greenAccent,
-            secondary: Colors.greenAccent,
-          ),
         ),
+        // *** THIS NOW CORRECTLY POINTS TO HomeScreen ***
         home: const HomeScreen(),
       ),
     );
