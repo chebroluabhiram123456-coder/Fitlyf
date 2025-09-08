@@ -9,6 +9,7 @@ import 'package:fitlyf/screens/weekly_plan_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:fitlyf/models/workout_model.dart'; // This import now works correctly
 
+// The HomeScreen is now a StatefulWidget to manage the navigation state
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,8 +20,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
+  // This list holds the different pages for your app
   static const List<Widget> _widgetOptions = <Widget>[
-    _HomeContent(),
+    _HomeContent(), // Your beautiful UI is now the first page
     ProgressScreen(),
     WeeklyPlanScreen(),
     Scaffold(body: Center(child: Text('Profile Screen', style: TextStyle(color: Colors.white)))),
@@ -35,10 +37,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // The body will be the currently selected page
       body: IndexedStack(
         index: _selectedIndex,
         children: _widgetOptions,
       ),
+      // The bottom navigation bar is now part of the HomeScreen's Scaffold
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
@@ -58,6 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ===================================================================
+// THIS WIDGET CONTAINS YOUR EXACT UI, RESTORED AND FIXED
+// ===================================================================
 class _HomeContent extends StatelessWidget {
   const _HomeContent();
 
@@ -117,6 +124,7 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
+  // All of your original _build... methods are preserved here, untouched.
   Widget _buildRestDayCard() {
     return FrostedGlassCard(
       key: const ValueKey('rest_day'),
