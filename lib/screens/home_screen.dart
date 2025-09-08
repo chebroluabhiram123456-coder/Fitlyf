@@ -6,44 +6,23 @@ import 'package:fitlyf/widgets/frosted_glass_card.dart';
 import 'package:fitlyf/screens/workout_detail_screen.dart';
 import 'package:fitlyf/models/workout_model.dart';
 
-// Animation wrapper for a smooth entrance
-class FadeSlideIn extends StatelessWidget {
-  final Widget child;
-  const FadeSlideIn({ super.key, required this.child });
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder(
-      tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutCubic,
-      builder: (context, double value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(offset: Offset(0, (1 - value) * 30), child: child),
-        );
-      },
-      child: child,
-    );
-  }
-}
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      // 1. THIS CONTAINER RESTORES YOUR BACKGROUND IMAGE
       decoration: const BoxDecoration(
         image: DecorationImage(
-          // TODO: Replace with your actual background image asset path!
+          // IMPORTANT: Make sure you have a background image at this path!
+          // You may need to create these folders: assets/images/
           image: AssetImage("assets/images/background.png"), 
           fit: BoxFit.cover,
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Scaffold must be transparent to see the image
-        body: SafeArea( // Use SafeArea here to avoid status bar overlap
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -56,17 +35,13 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(height: 10),
                       _buildCalendarHeader(context, workoutProvider),
                       const SizedBox(height: 30),
-                      FadeSlideIn(
-                        child: Text(
-                          "Get ready, ${workoutProvider.userName}",
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
+                      Text(
+                        "Get ready, ${workoutProvider.userName}",
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                      FadeSlideIn(
-                        child: Text(
-                          "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
-                          style: const TextStyle(fontSize: 18, color: Colors.white70),
-                        ),
+                      Text(
+                        "Here's your plan for ${DateFormat('EEEE').format(workoutProvider.selectedDate)}",
+                        style: const TextStyle(fontSize: 18, color: Colors.white70),
                       ),
                       const SizedBox(height: 30),
                       AnimatedSwitcher(
@@ -83,9 +58,7 @@ class HomeScreen extends StatelessWidget {
                         child: workout != null ? _buildWorkoutCard(context, workout) : _buildRestDayCard(context),
                       ),
                       const SizedBox(height: 20),
-                      FadeSlideIn(
-                        child: _buildWeightTrackerCard(context, workoutProvider),
-                      ),
+                      _buildWeightTrackerCard(context, workoutProvider),
                       const SizedBox(height: 20),
                     ],
                   );
@@ -98,7 +71,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
   
-  // All the other _build... methods remain the same as before
+  // All other _build... methods are included below
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
      return GestureDetector(
        key: ValueKey<String>(workout.id),
