@@ -22,6 +22,10 @@ dependencies:
   table_calendar: ^3.0.9
   fl_chart: ^0.68.0
   google_fonts: ^6.2.1
+  
+  # THE FIX: This line is required to play videos.
+  video_player: ^2.9.0
+
 
 dev_dependencies:
   flutter_test:
@@ -31,7 +35,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # IMPORTANT: Make sure you have a background image at this path
-  # assets:
-  #   - assets/images/background.png
