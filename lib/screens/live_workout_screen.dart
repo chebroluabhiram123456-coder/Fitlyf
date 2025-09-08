@@ -1,241 +1,202 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
+import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
+import 'package:fitlyf/models/set_log_model.dart';
+import 'package:fitlyf/widgets/frosted_glass_card.dart';
+import 'package:fitlyf/widgets/modern_progress_bar.dart';
 
 class LiveWorkoutScreen extends StatefulWidget {
   final Workout workout;
-
-  const LiveWorkoutScreen({super.key, required this.workout});
+  const LiveWorkoutScreen({Key? key, required this.workout}) : super(key: key);
 
   @override
-  State<LiveWorkoutScreen> createState() => _LiveWorkoutScreenState();
+  _LiveWorkoutScreenState createState() => _LiveWorkoutScreenState();
 }
 
 class _LiveWorkoutScreenState extends State<LiveWorkoutScreen> {
   late PageController _pageController;
+  late List<Exercise> _exercises;
   int _currentExerciseIndex = 0;
+  Timer? _restTimer;
+  int _restSecondsRemaining = 60;
   bool _isResting = false;
+  VideoPlayerController? _videoController;
 
   @override
   void initState() {
     super.initState();
+    _exercises = widget.workout.exercises.map((ex) {
+      return Exercise( id: ex.id, name: ex.name, targetMuscle: ex.targetMuscle, sets: ex.sets, reps: ex.reps, description: ex.description, imageUrl: ex.imageUrl, videoUrl: ex.videoUrl, setsLogged: [] );
+    }).toList();
     _pageController = PageController();
+    _initializeVideoController(0);
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _restTimer?.cancel();
+    _videoController?.dispose();
     super.dispose();
   }
-
-  void _onPageChanged(int index) {
-    setState(() {
-      _currentExerciseIndex = index;
-    });
-  }
-
-  void _goToNextExercise() {
-    if (_currentExerciseIndex < widget.workout.exercises.length - 1) {
-      setState(() { _isResting = true; });
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() { _isResting = false; });
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeIn,
-        );
-      });
-    } else {
-      _showCompletionDialog();
+  
+  void _initializeVideoController(int index) {
+    _videoController?.dispose();
+    _videoController = null;
+    final videoUrl = _exercises[index].videoUrl;
+    if (videoUrl != null && videoUrl.isNotEmpty) {
+      _videoController = VideoPlayerController.file(File(videoUrl))
+        ..initialize().then((_) { if (mounted) setState(() {}); });
     }
   }
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Workout Complete!'),
-        content: const Text('Great job finishing your workout!'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            child: const Text('Finish'),
-          ),
-        ],
-      ),
-    );
+  void _onPageChanged(int index) {
+    setState(() { _currentExerciseIndex = index; });
+    _initializeVideoController(index);
   }
+  
+  void _startRestTimer() { setState(() { _isResting = true; _restSecondsRemaining = 60; }); _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) { if (_restSecondsRemaining > 0) { setState(() { _restSecondsRemaining--; }); } else { _finishRest(); } }); }
+  void _finishRest() { _restTimer?.cancel(); setState(() { _isResting = false; }); }
+  void _logAllSetsForExercise(int exerciseIndex) { final exercise = _exercises[exerciseIndex]; final provider = Provider.of<WorkoutProvider>(context, listen: false); final newLogs = List.generate(exercise.sets, (index) { return SetLog(reps: exercise.reps, weight: 50.0); }); setState(() { exercise.setsLogged.addAll(newLogs); }); for (var log in newLogs) { provider.logSet(exercise.id, log.reps, log.weight); } _startRestTimer(); }
+  void _nextExercise() { if (_currentExerciseIndex < _exercises.length - 1) { _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut); } else { _finishWorkout(); } }
+  void _finishWorkout() { final provider = Provider.of<WorkoutProvider>(context, listen: false); final completedWorkout = Workout(id: widget.workout.id, name: widget.workout.name, exercises: _exercises); provider.logWorkout(provider.selectedDate, completedWorkout); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Workout Complete! Achievement Unlocked: First Workout!"), backgroundColor: Colors.green)); Navigator.of(context).popUntil((route) => route.isFirst); }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.workout.name.toUpperCase(),
-                            style: const TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 1.5),
-                          ),
-                          Text(
-                            'Exercise ${_currentExerciseIndex + 1} of ${widget.workout.exercises.length}',
-                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 30),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: _onPageChanged,
-                    itemCount: widget.workout.exercises.length,
-                    itemBuilder: (context, index) {
-                      return _buildExercisePage(widget.workout.exercises[index], index);
-                    },
-                  ),
-                ),
-                _buildBottomNav(),
-              ],
+    if (_isResting) { return _buildRestTimerOverlay(); }
+    
+    final completedCount = _exercises.where((ex) => ex.setsLogged.length >= ex.sets).length;
+    final totalCount = _exercises.length;
+    final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text('Exercise ${_currentExerciseIndex + 1} of ${_exercises.length}'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(12.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5.0),
+              child: ModernProgressBar(progress: progress),
             ),
           ),
-          if (_isResting) _buildRestTimerOverlay(),
-        ],
+        ),
+        body: PageView.builder(
+          controller: _pageController,
+          itemCount: _exercises.length,
+          onPageChanged: _onPageChanged,
+          itemBuilder: (context, index) {
+            final exercise = _exercises[index];
+            return _buildExercisePage(exercise, index);
+          },
+        ),
+        bottomNavigationBar: _buildBottomNav(),
       ),
     );
   }
-
+  
   Widget _buildExercisePage(Exercise exercise, int exerciseIndex) {
-    return Container(
-      padding: const EdgeInsets.all(20.0),
+    final bool isExerciseDone = exercise.setsLogged.length >= exercise.sets;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
-            flex: 4,
-            child: _buildMediaDisplay(exercise),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            exercise.name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStatColumn('Sets', exercise.sets.toString()),
-              _buildStatColumn('Reps', exercise.reps.toString()),
-            ],
-          ),
-          const Spacer(),
+          _buildMediaDisplay(exercise),
+          const SizedBox(height: 25),
+          Text(exercise.name, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          Text(exercise.targetMuscle, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white70)),
+          const SizedBox(height: 25),
+          if (exercise.description != null && exercise.description!.isNotEmpty) ...[
+            FrostedGlassCard(
+              child: Text(exercise.description!, style: const TextStyle(color: Colors.white70, height: 1.5, fontSize: 16)),
+            ),
+            const SizedBox(height: 25),
+          ],
+          FrostedGlassCard(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                      _buildStatColumn("Sets", exercise.sets.toString()),
+                      Container(height: 50, width: 1, color: Colors.white24),
+                      _buildStatColumn("Reps", exercise.reps.toString()),
+                  ]),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: Icon(isExerciseDone ? Icons.check : Icons.done_all),
+                      label: Text(isExerciseDone ? "Completed" : "Mark as Complete"),
+                      onPressed: isExerciseDone ? null : () => _logAllSetsForExercise(exerciseIndex),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        backgroundColor: isExerciseDone ? Colors.greenAccent.withOpacity(0.5) : Colors.white,
+                        foregroundColor: isExerciseDone ? Colors.white : const Color(0xFF2D1458),
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
         ],
       ),
     );
   }
   
-  // --- THIS FUNCTION IS NOW CORRECTED ---
   Widget _buildMediaDisplay(Exercise exercise) {
-    // Prioritize video, then image, then show placeholder
-    if (exercise.videoUrl != null && exercise.videoUrl!.isNotEmpty) {
-      // TODO: Replace this with a real video player widget
-      return _buildMediaPlaceholder(icon: Icons.play_circle_outline);
-    } else if (exercise.imageUrl != null && exercise.imageUrl!.isNotEmpty) {
+    bool hasVideo = _videoController != null && _videoController!.value.isInitialized;
+    bool hasImage = exercise.imageUrl != null && exercise.imageUrl!.isNotEmpty;
+
+    if (hasVideo) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Image.network(
-          exercise.imageUrl!, // Using the correct 'imageUrl' property
-          fit: BoxFit.cover,
-          width: double.infinity,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(child: CircularProgressIndicator());
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return _buildMediaPlaceholder(icon: Icons.image_not_supported_outlined);
-          },
+        borderRadius: BorderRadius.circular(15),
+        child: AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              VideoPlayer(_videoController!),
+              IconButton(
+                icon: Icon(_videoController!.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled, size: 60, color: Colors.white.withOpacity(0.8)),
+                onPressed: () { setState(() { _videoController!.value.isPlaying ? _videoController!.pause() : _videoController!.play(); }); },
+              ),
+            ],
+          ),
         ),
       );
+    } else if (hasImage) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Image.file(File(exercise.imageUrl!), height: 200, width: double.infinity, fit: BoxFit.cover, errorBuilder: (c, e, s) => _buildMediaPlaceholder()),
+      );
+    } else {
+      return _buildMediaPlaceholder();
     }
-    // Fallback if no media is available
-    return _buildMediaPlaceholder();
   }
 
-  Widget _buildMediaPlaceholder({IconData icon = Icons.fitness_center}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Center(
-        child: Icon(
-          icon,
-          color: Colors.white30,
-          size: 100,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatColumn(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 4),
-        Text(label.toUpperCase(), style: const TextStyle(fontSize: 14, color: Colors.white70, letterSpacing: 1.2)),
-      ],
-    );
-  }
-
-  Widget _buildRestTimerOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.85),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("TAKE A REST", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2)),
-            SizedBox(height: 20),
-            Text("15s", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.greenAccent)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    bool isLastExercise = _currentExerciseIndex == widget.workout.exercises.length - 1;
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: ElevatedButton(
-        onPressed: _goToNextExercise,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.greenAccent,
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        ),
-        child: Text(isLastExercise ? 'Finish Workout' : 'Next Exercise'),
-      ),
-    );
-  }
+  Widget _buildMediaPlaceholder() { return Container(height: 200, width: double.infinity, decoration: BoxDecoration(color: Colors.black.withOpacity(0.2), borderRadius: BorderRadius.circular(15)), child: const Center(child: Icon(Icons.fitness_center, color: Colors.white38, size: 60))); }
+  Widget _buildStatColumn(String label, String value) { return Column(children: [ Text(value, style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold)), const SizedBox(height: 5), Text(label, style: const TextStyle(color: Colors.white70))]); }
+  Widget _buildRestTimerOverlay() { return Container(decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)], begin: Alignment.topLeft, end: Alignment.bottomRight)), child: Scaffold(backgroundColor: Colors.transparent, body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [ Text("REST", style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white70)), Text('$_restSecondsRemaining', style: Theme.of(context).textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 120)), const SizedBox(height: 20), ElevatedButton(onPressed: _finishRest, style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458)), child: const Text('Skip Rest'))])))); }
+  Widget _buildBottomNav() { bool isLastExercise = _currentExerciseIndex == _exercises.length - 1; bool areAllSetsDone = _exercises[_currentExerciseIndex].setsLogged.length >= _exercises[_currentExerciseIndex].sets; return Padding(padding: const EdgeInsets.fromLTRB(20, 10, 20, 30), child: ElevatedButton(onPressed: areAllSetsDone ? (isLastExercise ? _finishWorkout : _nextExercise) : null, style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF2D1458), disabledBackgroundColor: Colors.white.withOpacity(0.3), padding: const EdgeInsets.symmetric(vertical: 15), textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))), child: Text(isLastExercise ? 'Finish Workout' : 'Next Exercise'))); }
 }
