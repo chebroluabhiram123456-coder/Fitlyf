@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fitlyf/models/workout_model.dart';
 import 'package:fitlyf/models/exercise_model.dart';
 import 'package:fitlyf/models/workout_status.dart';
-import 'package.dart';
+import 'package:intl/intl.dart'; // <-- THE MISSING IMPORT
 import 'dart:math';
 
 // --- Data Models are included here to prevent any missing import errors ---
