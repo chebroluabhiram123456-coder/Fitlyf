@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fitlyf/models/exercise_model.dart';
+// THE FIX: Add the two missing import statements.
 import 'package:video_player/video_player.dart';
 import 'package:fitlyf/widgets/frosted_glass_card.dart';
 
@@ -35,7 +36,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // THE FIX: Add the gradient background
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
@@ -115,7 +115,6 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 30),
-        // Smartly choose to show Video first if available, otherwise show Image
         if (hasVideo) ...[
           Text("Video", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
