@@ -4,6 +4,7 @@ import '../models/exercise_model.dart';
 import '../models/workout_model.dart';
 import '../models/set_log_model.dart';
 
+// This enum defines the possible states for a day on the calendar.
 enum WorkoutStatus { Completed, Skipped, Scheduled, Rest, Future }
 
 class WorkoutProvider with ChangeNotifier {
@@ -37,6 +38,7 @@ class WorkoutProvider with ChangeNotifier {
     'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Abs', 'Rest'
   ];
 
+  // --- Getters ---
   String get userName => _userName;
   String? get profileImagePath => _profileImagePath;
   DateTime get selectedDate => _selectedDate;
@@ -44,11 +46,41 @@ class WorkoutProvider with ChangeNotifier {
   Map<String, List<String>> get weeklyPlan => _weeklyPlan;
   Map<DateTime, Workout> get workoutLog => _workoutLog;
   bool isExerciseInProgressCompleted(String exerciseId) => _inProgressExerciseIds.contains(exerciseId);
-  int get weeklyStreakCount { final today = DateTime.now(); final startOfWeek = today.subtract(Duration(days: today.weekday - 1)); int streak = 0; for (int i = 0; i < today.weekday; i++) { final day = DateUtils.dateOnly(startOfWeek.add(Duration(days: i))); if (_workoutLog.containsKey(day)) streak++; } return streak; }
-  int get weeklyWorkoutDaysCount { return _weeklyPlan.values.where((plan) => !plan.contains('Rest')).length; }
-  String get streakMessage { final streak = weeklyStreakCount; if (streak <= 0) return "Let's start the week strong!"; if (streak <= 2) return "Great start!"; if (streak == 3) return "Good progress!"; if (streak == 4) return "Fantastic progress!"; return "Amazing, keep it up!"; }
-  double get latestWeight { if (_weightHistory.isEmpty) return 0.0; final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a)); return _weightHistory[sortedDates.first]!; }
-  double? get weightForSelectedDate { final entry = _weightHistory.entries.firstWhere((e) => DateUtils.isSameDay(e.key, _selectedDate), orElse: () => MapEntry(DateTime(0), -1.0)); return entry.value == -1.0 ? null : entry.value; }
+
+  int get weeklyStreakCount {
+    final today = DateTime.now();
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    int streak = 0;
+    for (int i = 0; i < today.weekday; i++) {
+      final day = DateUtils.dateOnly(startOfWeek.add(Duration(days: i)));
+      if (_workoutLog.containsKey(day)) streak++;
+    }
+    return streak;
+  }
+  
+  int get weeklyWorkoutDaysCount {
+    return _weeklyPlan.values.where((plan) => !plan.contains('Rest')).length;
+  }
+
+  String get streakMessage {
+    final streak = weeklyStreakCount;
+    if (streak <= 0) return "Let's start the week strong!";
+    if (streak <= 2) return "Great start!";
+    if (streak == 3) return "Good progress!";
+    if (streak == 4) return "Fantastic progress!";
+    return "Amazing, keep it up!";
+  }
+
+  double get latestWeight {
+    if (_weightHistory.isEmpty) return 0.0;
+    final sortedDates = _weightHistory.keys.toList()..sort((a, b) => b.compareTo(a));
+    return _weightHistory[sortedDates.first]!;
+  }
+  
+  double? get weightForSelectedDate {
+    final entry = _weightHistory.entries.firstWhere((e) => DateUtils.isSameDay(e.key, _selectedDate), orElse: () => MapEntry(DateTime(0), -1.0));
+    return entry.value == -1.0 ? null : entry.value;
+  }
   
   Workout? get selectedWorkout {
     final dayName = DateFormat('EEEE').format(_selectedDate);
@@ -62,9 +94,7 @@ class WorkoutProvider with ChangeNotifier {
   }
   
   Workout? get getTodaysWorkout {
-    final today = DateUtils.dateOnly(DateTime.now());
-    if (_workoutLog.containsKey(today)) return _workoutLog[today];
-    final dayName = DateFormat('EEEE').format(today);
+    final dayName = DateFormat('EEEE').format(DateTime.now());
     final targetMuscles = _weeklyPlan[dayName];
     if (targetMuscles == null || targetMuscles.isEmpty || targetMuscles.contains('Rest')) return null;
     final exercisesForDay = allExercises.where((ex) => targetMuscles.contains(ex.targetMuscle)).toList();
@@ -76,16 +106,9 @@ class WorkoutProvider with ChangeNotifier {
 
   List<Exercise> get allExercises { return [..._workouts.expand((workout) => workout.exercises), ..._customExercises]; }
   
-  void startWorkoutSession() {
-    final dateOnly = DateUtils.dateOnly(_selectedDate);
-    if (_workoutLog.containsKey(dateOnly)) {
-      final loggedWorkout = _workoutLog[dateOnly]!;
-      _inProgressExerciseIds = loggedWorkout.exercises.where((ex) => ex.isCompleted).map((ex) => ex.id).toSet();
-    } else {
-      _inProgressExerciseIds.clear();
-    }
-    notifyListeners();
-  }
+  // --- Methods ---
+  
+  void startWorkoutSession() { _inProgressExerciseIds.clear(); notifyListeners(); }
   void toggleInProgressExerciseCompletion(String exerciseId, bool isCompleted) { if (isCompleted) _inProgressExerciseIds.add(exerciseId); else _inProgressExerciseIds.remove(exerciseId); notifyListeners(); }
   bool areAllExercisesComplete(List<Exercise> exercises) { if (exercises.isEmpty) return false; final exerciseIds = exercises.map((e) => e.id).toSet(); return _inProgressExerciseIds.containsAll(exerciseIds); }
   void logWorkout(DateTime date, Workout workout) { final loggedWorkout = Workout(id: workout.id, name: workout.name, exercises: workout.exercises.map((ex) { return Exercise(id: ex.id, name: ex.name, targetMuscle: ex.targetMuscle, sets: ex.sets, reps: ex.reps, description: ex.description, imageUrl: ex.imageUrl, videoUrl: ex.videoUrl, isCompleted: _inProgressExerciseIds.contains(ex.id)); }).toList()); _workoutLog[DateUtils.dateOnly(date)] = loggedWorkout; if (_achievements['first_workout'] == false) _achievements['first_workout'] = true; notifyListeners(); }
