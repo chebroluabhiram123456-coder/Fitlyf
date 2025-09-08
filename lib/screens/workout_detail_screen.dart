@@ -36,79 +36,88 @@ class _WorkoutDetailScreenState extends State<WorkoutDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(widget.workout.name),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF2D1458), Color(0xFF1A0E38)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Consumer<WorkoutProvider>(
-              builder: (context, workoutProvider, child) {
-                final isWorkoutComplete = workoutProvider.workoutLog.containsKey(DateUtils.dateOnly(workoutProvider.selectedDate));
-                final exercisesInThisWorkout = _orderedExercises.map((e) => e.id).toSet();
-                final completedCount = workoutProvider.inProgressExerciseIds.where((id) => exercisesInThisWorkout.contains(id)).length;
-                final totalCount = _orderedExercises.length;
-                final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
-                
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                      child: ModernProgressBar(progress: progress),
-                    ),
-                    Expanded(
-                      child: ReorderableListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        itemCount: _orderedExercises.length,
-                        itemBuilder: (ctx, index) {
-                          final exercise = _orderedExercises[index];
-                          return Padding(
-                            key: ValueKey(exercise.id),
-                            padding: const EdgeInsets.only(bottom: 15.0),
-                            child: FrostedGlassCard(
-                              padding: const EdgeInsets.all(5),
-                              child: ListTile(
-                                leading: Checkbox(
-                                  value: workoutProvider.isExerciseInProgressCompleted(exercise.id),
-                                  activeColor: Colors.white,
-                                  checkColor: const Color(0xFF2D1458),
-                                  onChanged: isWorkoutComplete ? null : (bool? value) {
-                                    if (value != null) {
-                                      workoutProvider.toggleInProgressExerciseCompletion(exercise.id, value);
-                                      if (workoutProvider.areAllExercisesComplete(_orderedExercises)) {
-                                        _finishWorkout(context, workoutProvider);
-                                      }
-                                    }
-                                  },
-                                ),
-                                title: Text(exercise.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text('${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}', style: const TextStyle(color: Colors.white70)),
-                                trailing: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle, color: Colors.white70)),
-                                onTap: () { Navigator.push(context, FadePageRoute(child: ExerciseDetailScreen(exercise: exercise))); },
-                              ),
-                            ),
-                          );
-                        },
-                        onReorder: (int oldIndex, int newIndex) {
-                          setState(() {
-                             if (newIndex > oldIndex) newIndex -= 1;
-                             final item = _orderedExercises.removeAt(oldIndex);
-                             _orderedExercises.insert(newIndex, item);
-                          });
-                        },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(widget.workout.name),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: Consumer<WorkoutProvider>(
+                builder: (context, workoutProvider, child) {
+                  final isWorkoutComplete = workoutProvider.workoutLog.containsKey(DateUtils.dateOnly(workoutProvider.selectedDate));
+                  final exercisesInThisWorkout = _orderedExercises.map((e) => e.id).toSet();
+                  final completedCount = workoutProvider.inProgressExerciseIds.where((id) => exercisesInThisWorkout.contains(id)).length;
+                  final totalCount = _orderedExercises.length;
+                  final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
+                  
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                        child: ModernProgressBar(progress: progress),
                       ),
-                    ),
-                  ],
-                );
-              },
+                      Expanded(
+                        child: ReorderableListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          itemCount: _orderedExercises.length,
+                          itemBuilder: (ctx, index) {
+                            final exercise = _orderedExercises[index];
+                            return Padding(
+                              key: ValueKey(exercise.id),
+                              padding: const EdgeInsets.only(bottom: 15.0),
+                              child: FrostedGlassCard(
+                                padding: const EdgeInsets.all(5),
+                                child: ListTile(
+                                  leading: Checkbox(
+                                    value: workoutProvider.isExerciseInProgressCompleted(exercise.id),
+                                    activeColor: Colors.white,
+                                    checkColor: const Color(0xFF2D1458),
+                                    onChanged: isWorkoutComplete ? null : (bool? value) {
+                                      if (value != null) {
+                                        workoutProvider.toggleInProgressExerciseCompletion(exercise.id, value);
+                                        if (workoutProvider.areAllExercisesComplete(_orderedExercises)) {
+                                          _finishWorkout(context, workoutProvider);
+                                        }
+                                      }
+                                    },
+                                  ),
+                                  title: Text(exercise.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text('${exercise.sets} sets x ${exercise.reps} reps - ${exercise.targetMuscle}', style: const TextStyle(color: Colors.white70)),
+                                  trailing: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle, color: Colors.white70)),
+                                  onTap: () { Navigator.push(context, FadePageRoute(child: ExerciseDetailScreen(exercise: exercise))); },
+                                ),
+                              ),
+                            );
+                          },
+                          onReorder: (int oldIndex, int newIndex) {
+                            setState(() {
+                               if (newIndex > oldIndex) newIndex -= 1;
+                               final item = _orderedExercises.removeAt(oldIndex);
+                               _orderedExercises.insert(newIndex, item);
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-          _buildActionButtons(context),
-        ],
+            _buildActionButtons(context),
+          ],
+        ),
       ),
     );
   }
