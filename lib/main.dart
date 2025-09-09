@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
 import 'package:fitlyf/providers/workout_provider.dart';
 import 'package:fitlyf/screens/home_screen.dart';
 import 'package:fitlyf/screens/progress_screen.dart';
 import 'package:fitlyf/screens/weekly_plan_screen.dart';
 import 'package:fitlyf/screens/profile_screen.dart';
 
-void main() {
+// THE FIX 1: The main function must be 'async' to initialize Firebase.
+void main() async {
+  // This is required to ensure that native code can be called before runApp.
+  WidgetsFlutterBinding.ensureInitialized();
+  // This line initializes the Firebase connection.
+  await Firebase.initializeApp();
+  
   runApp(const MyApp());
 }
 
@@ -20,7 +27,8 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (ctx) => WorkoutProvider(),
       child: MaterialApp(
-        title: 'FitLfy',
+        title: 'Fitlyf',
+        // THE FIX 2: This is the correct, stable way to apply a global font theme.
         theme: base.copyWith(
           textTheme: GoogleFonts.poppinsTextTheme(base.textTheme),
           primaryColor: Colors.deepPurple,
